@@ -16,6 +16,7 @@ import {
 import { runtimeDockerDir, runtimePrismaDir, runtimeSeedSqlDir, runtimeSpiceDbSchemaPath } from '../core/paths.ts';
 import type { DeployConfig, GhcrMode, SecretMode } from '../core/types.ts';
 import { shiroNyaAppImageRegistry, shiroNyaAppImageTag } from '../deploy/modules/constants.ts';
+import { normalizeDockerPath } from '../deploy/modules/docker-path.ts';
 
 /**
  * 文件作用：
@@ -770,6 +771,10 @@ function buildConfig(answers: DeployAnswers): DeployConfig {
             ADMIN_WEB_PORT: adminWebPort,
             // Grafana 只给浏览器和运维查看日志/链路使用，不参与 Better Auth/CORS 派生。
             GRAFANA_PORT: grafanaPort,
+            // 这些路径变量写入主 env，确保用户手动执行部署摘要里的 docker compose 命令时也能解析挂载和 env_file。
+            SHIRO_NYA_ROOT: normalizeDockerPath(targetRoot),
+            SHIRO_NYA_LOG_DIR: normalizeDockerPath(targetLogDir),
+            GRAFANA_ENV_FILE: normalizeDockerPath(grafanaEnvFile),
             ADMIN_WEB_PUBLIC_ORIGIN: adminWebPublicOrigin,
             ADMIN_API_PUBLIC_ORIGIN: adminApiPublicOrigin,
             APP_API_PUBLIC_ORIGIN: appApiPublicOrigin,

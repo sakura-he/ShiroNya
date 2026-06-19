@@ -253,7 +253,7 @@ services:
         container_name: grafana
         restart: unless-stopped
         env_file:
-            - ${GRAFANA_ENV_FILE:-/opt/shiro-nya/grafana-loki/.env}
+            - ${GRAFANA_ENV_FILE:-../grafana-loki/.env}
         ports:
             # Windows Docker Desktop 常见的动态保留端口段会覆盖 3100，导致 Docker 显示已映射但宿主机无法监听。
             # 因此宿主机端口默认使用 57302；容器内部仍然是 Grafana 官方默认端口 3000。

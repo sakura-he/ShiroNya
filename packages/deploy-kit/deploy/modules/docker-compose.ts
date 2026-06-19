@@ -1,5 +1,6 @@
 import type { DeployConfig } from '../../core/types.ts';
 import { logDeployMessage, runLoggedCommand } from './command.ts';
+import { normalizeDockerPath } from './docker-path.ts';
 
 /**
  * 文件作用：
@@ -68,9 +69,9 @@ export function composeEnv(config: DeployConfig): NodeJS.ProcessEnv {
         // 继承当前进程环境，保留 PATH、Docker 相关变量、代理变量等。
         ...process.env,
         // 以下变量会被 compose.yaml 或服务配置引用。
-        SHIRO_NYA_ROOT: config.targetRoot,
-        SHIRO_NYA_LOG_DIR: config.targetLogDir,
-        GRAFANA_ENV_FILE: config.grafanaEnvFile
+        SHIRO_NYA_ROOT: normalizeDockerPath(config.targetRoot),
+        SHIRO_NYA_LOG_DIR: normalizeDockerPath(config.targetLogDir),
+        GRAFANA_ENV_FILE: normalizeDockerPath(config.grafanaEnvFile)
     };
 }
 

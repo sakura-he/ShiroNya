@@ -5,6 +5,7 @@ import YAML from 'yaml';
 import type { DeployConfig } from '../../core/types.ts';
 import { ensureDeploymentCertificates } from './certificates.ts';
 import { logDeployMessage } from './command.ts';
+import { normalizeDockerPath } from './docker-path.ts';
 import { ensureRuntimeDirs, writeApplicationEnvFiles } from './env-files.ts';
 
 /**
@@ -52,22 +53,6 @@ export async function copyDockerConfig(config: DeployConfig): Promise<void> {
         }
     });
     await logDeployMessage(config, 'docker config', `复制配置目录: ${sourceConfig} -> ${targetConfig}`);
-}
-
-/**
- * 把本机路径转成 Docker Compose 更容易识别的路径格式。
- *
- * Windows 路径默认使用反斜杠 `\`，例如 `C:\shiro-nya\logs`。
- * Docker Compose 的 volume 写法更推荐正斜杠 `/`，所以这里统一替换成 `C:/shiro-nya/logs`。
- *
- * 正则 `/\\/g` 说明：
- * - 外层 `/.../g` 是 JavaScript 正则字面量，`g` 表示全局替换。
- * - `\\` 在正则里表示匹配一个反斜杠。
- * - 因为反斜杠本身是转义字符，所以看起来会有两个。
- */
-function normalizeDockerPath(input: string): string {
-    // nodePath.resolve 会把相对路径变成绝对路径，同时消除 `..`、`.` 等路径片段。
-    return nodePath.resolve(input).replace(/\\/g, '/');
 }
 
 /**

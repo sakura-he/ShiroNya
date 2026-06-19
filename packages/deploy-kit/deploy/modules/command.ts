@@ -163,6 +163,33 @@ export function shellQuote(value: string): string {
     return JSON.stringify(value);
 }
 
+/** 从命令失败对象里提取适合直接展示给用户看的最后一条关键输出。 */
+function commandFailureSummary(error: unknown): string | undefined {
+    const execaLikeError = error as {
+        message?: string;
+        shortMessage?: string;
+        stderr?: string;
+        stdout?: string;
+    };
+    const text = [execaLikeError.stderr, execaLikeError.stdout, execaLikeError.shortMessage, execaLikeError.message]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .join('\n');
+
+    const lines = text
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+    if (!lines.length) return undefined;
+
+    // Docker Compose 会输出很多状态行；真正的失败原因通常是最后的 Error response 或 failed 行。
+    const importantLine = [...lines]
+        .reverse()
+        .find((line) => /error|failed|denied|refused|timeout|address already in use/i.test(line));
+
+    return importantLine ?? lines.at(-1);
+}
+
 /**
  * 写一条部署日志，并同步显示到终端 UI。
  *
@@ -280,7 +307,16 @@ export async function runLoggedCommand(
         if (mirrorToTerminal) writeDeployRuntimeEntryToTerminal(commandFailedEntry);
 
         // 抛给上层的错误信息保持简短，并告诉用户去部署运行日志看详情。
-        throw new Error(`命令执行失败：${commandLine}${os.EOL}详见部署运行日志：${deployLogLocationText(config)}`);
+        const failureSummary = commandFailureSummary(error);
+        throw new Error(
+            [
+                `命令执行失败：${commandLine}`,
+                failureSummary ? `失败原因：${failureSummary}` : undefined,
+                `详见部署运行日志：${deployLogLocationText(config)}`
+            ]
+                .filter((line): line is string => Boolean(line))
+                .join(os.EOL)
+        );
     }
 }
 
