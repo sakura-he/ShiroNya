@@ -62,14 +62,14 @@ function serviceCredentialSummary(config: DeployConfig): string[] {
 
     return [
         '服务账号密码:',
-        `  PostgreSQL 主库: host=localhost port=15432 user=${summaryValue(config.env.POSTGRES_USER)} password=${summaryValue(config.env.POSTGRES_PASSWORD)} default_db=${summaryValue(config.env.POSTGRES_DB)}`,
+        `  PostgreSQL 主库: host=127.0.0.1 port=15432 user=${summaryValue(config.env.POSTGRES_USER)} password=${summaryValue(config.env.POSTGRES_PASSWORD)} default_db=${summaryValue(config.env.POSTGRES_DB)}`,
         `  PostgreSQL Admin 数据库: database=${summaryValue(config.env.ADMIN_POSTGRES_DB)} user=${summaryValue(config.env.POSTGRES_USER)} password=${summaryValue(config.env.POSTGRES_PASSWORD)}`,
         `  PostgreSQL App 数据库: database=${summaryValue(config.env.APP_POSTGRES_DB)} user=${summaryValue(config.env.POSTGRES_USER)} password=${summaryValue(config.env.POSTGRES_PASSWORD)}`,
         `  PostgreSQL SpiceDB 数据库: database=${summaryValue(config.env.SPICEDB_POSTGRES_DB)} user=${summaryValue(config.env.SPICEDB_POSTGRES_USER)} password=${summaryValue(config.env.SPICEDB_POSTGRES_PASSWORD)}`,
-        `  Admin Redis: host=localhost port=${summaryValue(config.env.ADMIN_REDIS_PORT)} user=${summaryValue(config.env.ADMIN_REDIS_USER)} password=${summaryValue(config.env.ADMIN_REDIS_PASSWORD)}`,
-        `  App Redis: host=localhost port=${summaryValue(config.env.APP_REDIS_PORT)} user=${summaryValue(config.env.APP_REDIS_USER)} password=${summaryValue(config.env.APP_REDIS_PASSWORD)}`,
-        `  MongoDB: host=localhost port=27017 user=${summaryValue(config.env.MONGO_USER)} password=${summaryValue(config.env.MONGO_PASSWORD)} database=${summaryValue(config.env.MONGO_DB)} authSource=admin`,
-        `  SpiceDB gRPC: endpoint=localhost:50052 token=${summaryValue(config.env.SPICEDB_GRPC_PRESHARED_KEY)}`,
+        `  Admin Redis: host=127.0.0.1 port=${summaryValue(config.env.ADMIN_REDIS_PORT)} user=${summaryValue(config.env.ADMIN_REDIS_USER)} password=${summaryValue(config.env.ADMIN_REDIS_PASSWORD)}`,
+        `  App Redis: host=127.0.0.1 port=${summaryValue(config.env.APP_REDIS_PORT)} user=${summaryValue(config.env.APP_REDIS_USER)} password=${summaryValue(config.env.APP_REDIS_PASSWORD)}`,
+        `  MongoDB: host=127.0.0.1 port=27017 user=${summaryValue(config.env.MONGO_USER)} password=${summaryValue(config.env.MONGO_PASSWORD)} database=${summaryValue(config.env.MONGO_DB)} authSource=admin`,
+        `  SpiceDB gRPC: endpoint=127.0.0.1:50052 token=${summaryValue(config.env.SPICEDB_GRPC_PRESHARED_KEY)}`,
         `  Grafana: user=${grafanaUser} password=${summaryValue(config.grafanaEnv.GF_SECURITY_ADMIN_PASSWORD)}`,
         `  Redpanda Console: ${redpandaConsoleAuth}`,
         `  Loki: ${lokiAuth}`,
@@ -95,9 +95,9 @@ export function summary(config: DeployConfig): string {
     const appApiPort = config.env.APP_API_PORT ?? '57303';
     const adminWebPort = config.env.ADMIN_WEB_PORT ?? '57301';
     const grafanaPort = config.env.GRAFANA_PORT ?? '57302';
-    const adminApiOrigin = config.env.ADMIN_API_PUBLIC_ORIGIN ?? `http://localhost:${adminApiPort}`;
-    const appApiOrigin = config.env.APP_API_PUBLIC_ORIGIN ?? `http://localhost:${appApiPort}`;
-    const adminWebOrigin = config.env.ADMIN_WEB_PUBLIC_ORIGIN ?? `http://localhost:${adminWebPort}`;
+    const adminApiOrigin = config.env.ADMIN_API_PUBLIC_ORIGIN ?? `http://127.0.0.1:${adminApiPort}`;
+    const appApiOrigin = config.env.APP_API_PUBLIC_ORIGIN ?? `http://127.0.0.1:${appApiPort}`;
+    const adminWebOrigin = config.env.ADMIN_WEB_PUBLIC_ORIGIN ?? `http://127.0.0.1:${adminWebPort}`;
 
     // 主 env 逐行展示，便于用户确认数据库、Redis、MongoDB、SpiceDB 等配置。
     const envSummary = Object.entries(config.env)
@@ -140,10 +140,10 @@ export function summary(config: DeployConfig): string {
         grafanaSummary,
         '',
         '访问地址:',
-        `  Grafana: http://localhost:${grafanaPort}`,
+        `  Grafana: http://127.0.0.1:${grafanaPort}`,
         `  Admin API 健康检查: ${adminApiOrigin}/admin/api/auth/get-session`,
         `  App API 健康检查: ${appApiOrigin}/app/api/auth/get-session`,
         `  Admin Web: ${adminWebOrigin}`,
-        `  Redpanda Console: http://localhost:18080`
+        `  Redpanda Console: http://127.0.0.1:18080`
     ].join('\n');
 }

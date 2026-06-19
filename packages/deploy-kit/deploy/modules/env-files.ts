@@ -125,19 +125,14 @@ function configuredPort(config: DeployConfig, key: string, fallback: string): st
     return config.env[key]?.trim() || fallback;
 }
 
-/** 生成 localhost HTTP URL。 */
-function localhostUrl(port: string): string {
-    return `http://localhost:${port}`;
-}
-
-/** 生成 127.0.0.1 HTTP URL。 */
-function loopbackUrl(port: string): string {
+/** 生成本机回环 IP 的 HTTP URL；部署输出统一使用 127.0.0.1，不使用主机名别名。 */
+function loopbackHttpUrl(port: string): string {
     return `http://127.0.0.1:${port}`;
 }
 
-/** 读取公开访问 origin；没有配置时回退到 localhost + 对应端口。 */
+/** 读取公开访问 origin；没有配置时回退到 127.0.0.1 + 对应端口。 */
 function configuredOrigin(config: DeployConfig, key: string, fallbackPort: string): string {
-    return config.env[key]?.trim() || localhostUrl(fallbackPort);
+    return config.env[key]?.trim() || loopbackHttpUrl(fallbackPort);
 }
 
 /** 判断公开访问 origin 是否使用 HTTPS。 */
@@ -171,14 +166,9 @@ function adminWebOrigins(config: DeployConfig): string {
     return commaSeparatedOrigins([
         adminWebPublicOrigin,
         adminApiPublicOrigin,
-        localhostUrl(adminWebPort),
-        loopbackUrl(adminWebPort),
-        localhostUrl(adminApiPort),
-        loopbackUrl(adminApiPort),
+        loopbackHttpUrl(adminWebPort),
+        loopbackHttpUrl(adminApiPort),
         // 常用 Vite 开发端口保留在白名单里，方便开源用户本地调试前端。
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5176',
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
         'http://127.0.0.1:5176'
@@ -195,13 +185,8 @@ function appOrigins(config: DeployConfig): string {
     return commaSeparatedOrigins([
         appApiPublicOrigin,
         adminWebPublicOrigin,
-        localhostUrl(appApiPort),
-        loopbackUrl(appApiPort),
-        localhostUrl(adminWebPort),
-        loopbackUrl(adminWebPort),
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5176',
+        loopbackHttpUrl(appApiPort),
+        loopbackHttpUrl(adminWebPort),
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
         'http://127.0.0.1:5176',
@@ -269,7 +254,7 @@ function applicationEnvOverrides(config: DeployConfig, service: 'admin-api' | 'a
         APP_USER_ADMIN_GRPC_TLS_SERVER_KEY_PATH: '/app/certs/app-user-admin-grpc/server.key',
         APP_USER_ADMIN_GRPC_TLS_CLIENT_CERT_PATH: '/app/certs/app-user-admin-grpc/client.crt',
         APP_USER_ADMIN_GRPC_TLS_CLIENT_KEY_PATH: '/app/certs/app-user-admin-grpc/client.key',
-        APP_USER_ADMIN_GRPC_TLS_SERVER_NAME: 'localhost',
+        APP_USER_ADMIN_GRPC_TLS_SERVER_NAME: 'app-api',
         // 两个数据库 URL 都写入，便于 admin-api/app-api 中需要跨库配置的场景；容器内统一走 PostgreSQL 服务名。
         ADMIN_DATABASE_URL: containerDatabaseUrl(config, adminDatabase),
         APP_DATABASE_URL: containerDatabaseUrl(config, appDatabase),

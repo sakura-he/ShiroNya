@@ -11,7 +11,7 @@ scrape_configs:
   - job_name: cerbos-audit
     static_configs:
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: cerbos-audit
           __path__: /audit_logs/audit.log
@@ -44,22 +44,22 @@ scrape_configs:
   - job_name: shiro-nya-runtime-logs
     static_configs:
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-runtime-logs
           __path__: /shiro-nya_logs/app-api/system-*.log
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-runtime-logs
           __path__: /shiro-nya_logs/app-api/user_action-*.log
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-runtime-logs
           __path__: /shiro-nya_logs/admin-api/system-*.log
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-runtime-logs
           __path__: /shiro-nya_logs/admin-api/user_action-*.log

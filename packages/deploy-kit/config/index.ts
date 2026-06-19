@@ -139,7 +139,7 @@ function defaultRoot(): string {
  * 把用户输入的“公开访问网址/主机”规范化成 URL origin。
  *
  * 输入规则：
- * - `localhost` / `127.0.0.1` 这类不带协议的主机，会按 HTTP 加上对应服务端口。
+ * - `127.0.0.1` 这类不带协议的主机，会按 HTTP 加上对应服务端口。
  * - `https://admin.example.com` 这类完整 URL，会保留协议、域名和显式端口。
  * - 不允许在这里输入 `/admin`、`/app` 之类路径；这些服务路径属于应用代码约定，不由部署脚本配置。
  */
@@ -390,7 +390,7 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
                 // 只填写公开访问来源，不填写 /admin 之类应用路径；路径由当前应用代码固定。
                 answers.adminWebPublicOrigin = await promptNonEmpty(
                     'Admin Web 公开访问网址或主机',
-                    answers.adminWebPublicOrigin ?? 'localhost',
+                    answers.adminWebPublicOrigin ?? '127.0.0.1',
                     allowBack
                 );
             }
@@ -400,7 +400,7 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
                 // admin-api 的公开来源用于 Better Auth baseURL、CORS 和 admin-web 静态资源 API 地址。
                 answers.adminApiPublicOrigin = await promptNonEmpty(
                     'Admin API 公开访问网址或主机',
-                    answers.adminApiPublicOrigin ?? 'localhost',
+                    answers.adminApiPublicOrigin ?? '127.0.0.1',
                     allowBack
                 );
             }
@@ -410,7 +410,7 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
                 // app-api 的公开来源用于 app-api Better Auth baseURL、trustedOrigins 和 CORS。
                 answers.appApiPublicOrigin = await promptNonEmpty(
                     'App API 公开访问网址或主机',
-                    answers.appApiPublicOrigin ?? 'localhost',
+                    answers.appApiPublicOrigin ?? '127.0.0.1',
                     allowBack
                 );
             }

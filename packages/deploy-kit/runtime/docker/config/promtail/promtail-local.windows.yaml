@@ -16,13 +16,13 @@ scrape_configs:
   - job_name: shiro-nya-local-runtime-logs
     static_configs:
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-local-runtime-logs
           source: local-dev
           __path__: ${SHIRO_NYA_ROOT}/logs/loki/*/system-${PROMTAIL_LOG_DATE}.log
       - targets:
-          - localhost
+          - 127.0.0.1
         labels:
           job: shiro-nya-local-runtime-logs
           source: local-dev

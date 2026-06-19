@@ -183,7 +183,7 @@ async function createSignedLeafCertificate(
 
     // SAN 列表用于告诉客户端“哪些 DNS 名称/IP 可以匹配这张证书”。
     const altNames = [
-        // type=2 是 DNSName，例如 localhost、admin-api-cerbos。
+        // type=2 是 DNSName，例如 app-api、admin-api-cerbos。
         ...(options.dnsNames ?? []).map((value) => ({ type: 2, value })),
         // type=7 是 IPAddress，例如 127.0.0.1 或宿主机局域网 IP。
         ...(options.ipAddresses ?? []).map((ip) => ({ ip, type: 7 }))
@@ -292,9 +292,9 @@ export async function ensureDeploymentCertificates(
             caCommonName: 'AppUserAdmin gRPC CA',
             clientCommonName: 'admin-api-app-user-client',
             output: nodePath.join(certRoot, 'app-user-admin-grpc', 'tls'),
-            serverCommonName: 'localhost',
+            serverCommonName: 'app-api',
             // app-api 和 app-user-admin-grpc 是 Docker 网络里的服务名，必须写进 DNS SAN。
-            serverDnsNames: ['localhost', 'app-api', 'app-user-admin-grpc'],
+            serverDnsNames: ['app-api', 'app-user-admin-grpc'],
             serverIpAddresses: ['127.0.0.1']
         },
         {
@@ -303,7 +303,7 @@ export async function ensureDeploymentCertificates(
             clientCommonName: 'cerbos-client',
             output: nodePath.join(certRoot, 'app-api-cerbos', 'tls'),
             serverCommonName: 'cerbos-server',
-            serverDnsNames: ['localhost', 'cerbos-server', 'app-api-cerbos', 'app-api-cerbos-grpc-proxy'],
+            serverDnsNames: ['cerbos-server', 'app-api-cerbos', 'app-api-cerbos-grpc-proxy'],
             serverIpAddresses: config.certServerIps
         },
         {
@@ -312,7 +312,7 @@ export async function ensureDeploymentCertificates(
             clientCommonName: 'admin-cerbos-client',
             output: nodePath.join(certRoot, 'admin-api-cerbos', 'tls'),
             serverCommonName: 'admin-cerbos-server',
-            serverDnsNames: ['localhost', 'admin-cerbos-server', 'admin-api-cerbos', 'admin-api-cerbos-grpc-proxy'],
+            serverDnsNames: ['admin-cerbos-server', 'admin-api-cerbos', 'admin-api-cerbos-grpc-proxy'],
             serverIpAddresses: config.certServerIps
         }
     ];
