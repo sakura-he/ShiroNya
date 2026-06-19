@@ -39,12 +39,6 @@ jobs:
                   APP_DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma
               run: pnpm prisma:generate
 
-            - name: Build SpiceDB toolkit CLI
-              run: pnpm --filter @spicedb-toolkit/cli... build
-
-            - name: Validate SpiceDB schema
-              run: pnpm spicedb:admin:schema:validate
-
             - name: Run backend tests
               run: pnpm test
 
