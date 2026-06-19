@@ -16,7 +16,7 @@
 
 1. `docker-pull.ts` 拉取 Compose 镜像并解析进度。
 2. `env-files.ts` 刷新应用 `.env.production`，可读取镜像默认 env 后覆盖部署值。
-3. `stateful-sync.ts` 串联 PostgreSQL、SpiceDB、MongoDB 有状态服务同步。
+3. `stateful-sync.ts` 串联 PostgreSQL、SpiceDB datastore migration、SpiceDB schema 发布、MongoDB 有状态服务同步。
 4. `database-schema.ts` 使用 Prisma `db push` 同步业务库表结构。
 5. `seed-data.ts` 执行开源版初始化 SQL，填充账号、权限、菜单和演示数据。
 6. `docker-compose.ts` 执行 `docker compose up -d --pull never`。
@@ -37,7 +37,7 @@
 - `mongodb-sync.ts`：在已有 MongoDB 数据卷场景下，用临时 noauth 维护容器同步 root 用户。
 - `prerequisites.ts`：检查本机部署依赖和 Docker daemon 连接状态。
 - `progress.ts`：统一执行步骤，写 START/DONE/FAIL 日志，并把步骤内部进度折算成整体进度。
-- `spicedb-sync.ts`：同步 PostgreSQL 角色/数据库，并执行 SpiceDB datastore migration。
+- `spicedb-sync.ts`：同步 PostgreSQL 角色/数据库，执行 SpiceDB datastore migration，并把 `spicedb/schema.zed` 发布到 SpiceDB。
 - `stateful-sync.ts`：按正确顺序串联 PostgreSQL、SpiceDB、MongoDB 的有状态同步。
 - `summary.ts`：生成部署完成后的摘要文本。
 

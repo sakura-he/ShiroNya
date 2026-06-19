@@ -100,8 +100,6 @@ function generatedComposeOverride(config: DeployConfig): string {
                     './config/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro',
                     // named volume 保存 Promtail 读取位置，避免重启后重复采集已读日志。
                     'promtail-positions:/positions',
-                    // Loki TLS 证书只读挂载给 Promtail，用于日志推送链路。
-                    './config/loki/tls:/etc/promtail/certs:ro',
                     // Cerbos audit logs 是 Docker volume，只读挂给 Promtail 采集。
                     'app-api-cerbos-audit-logs:/audit_logs:ro',
                     // 应用 Loki 日志目录来自宿主机，多个服务写入同一个日志根目录。

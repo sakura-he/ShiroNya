@@ -92,6 +92,7 @@ export default defineConfig({
         const assetsDir = path.join(outDir, 'assets');
         const runtimeDir = path.join(outDir, 'runtime');
         const seedSqlDir = path.join(runtimeDir, 'seed-sql');
+        const runtimeSpiceDbDir = path.join(runtimeDir, 'spicedb');
         const entryFile = path.join(outDir, 'index.js');
         await Promise.all([
             fs.cp(path.join(packageRoot, 'assets'), assetsDir, { recursive: true }),
@@ -99,6 +100,9 @@ export default defineConfig({
         ]);
         // seedSqlDir 位于 runtimeDir 里面，必须等 runtimeDir 创建完成后再复制，避免并发 mkdir 撞到 EEXIST。
         await fs.cp(path.join(workspaceRoot, 'database', 'seeds', 'open-source'), seedSqlDir, { recursive: true });
+        // SpiceDB schema 和业务源码复用同一份，打包时复制到 runtime 下，发布单文件时会被一起编码进去。
+        await fs.mkdir(runtimeSpiceDbDir, { recursive: true });
+        await fs.copyFile(path.join(workspaceRoot, 'spicedb', 'schema.zed'), path.join(runtimeSpiceDbDir, 'schema.zed'));
         // 0o755 表示 owner 可读写执行，其他用户可读执行；Windows chmod 失败时忽略。
         await fs.chmod(entryFile, 0o755).catch(() => undefined);
     }

@@ -217,7 +217,6 @@ services:
             - '3101:3100'
         volumes:
             - ./config/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
-            - ./config/loki/tls:/etc/loki/certs:ro
             - loki-data:/loki
         command: -config.file=/etc/loki/local-config.yaml
         mem_limit: 256m
@@ -231,7 +230,6 @@ services:
         volumes:
             - ./config/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
             - promtail-positions:/positions
-            - ./config/loki/tls:/etc/promtail/certs:ro
             - app-api-cerbos-audit-logs:/audit_logs:ro
             - ${SHIRO_NYA_LOG_DIR:-/opt/shiro-nya/logs/loki}:/shiro-nya_logs:ro
         command: -config.file=/etc/promtail/config.yaml
@@ -280,7 +278,6 @@ services:
         volumes:
             - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
             - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-            - ./config/loki/tls:/etc/grafana/certs:ro
             - grafana-data:/var/lib/grafana
         depends_on:
             - loki

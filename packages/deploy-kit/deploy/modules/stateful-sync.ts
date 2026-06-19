@@ -1,7 +1,7 @@
 import type { DeployConfig } from '../../core/types.ts';
 import { logDeployMessage } from './command.ts';
 import { syncMongoRootUser } from './mongodb-sync.ts';
-import { migrateSpiceDbDatastore, syncSpiceDbPostgres } from './spicedb-sync.ts';
+import { migrateSpiceDbDatastore, publishSpiceDbSchema, syncSpiceDbPostgres } from './spicedb-sync.ts';
 
 /**
  * 文件作用：
@@ -17,7 +17,8 @@ import { migrateSpiceDbDatastore, syncSpiceDbPostgres } from './spicedb-sync.ts'
  * 顺序不能随便改：
  * 1. 先同步 PostgreSQL 角色和数据库，因为 SpiceDB datastore 依赖 PostgreSQL。
  * 2. 再执行 SpiceDB migration，因为它需要可用的 datastore 连接串。
- * 3. 最后同步 MongoDB root 用户，因为它独立于 PostgreSQL/SpiceDB。
+ * 3. migration 后启动 SpiceDB 并写入业务 schema，否则 API 查询权限模型会找不到 role/menu 等定义。
+ * 4. 最后同步 MongoDB root 用户，因为它独立于 PostgreSQL/SpiceDB。
  */
 export async function syncStatefulServiceCredentials(config: DeployConfig): Promise<void> {
     await logDeployMessage(config, 'stateful sync', '开始同步 PostgreSQL / SpiceDB 凭据');
@@ -27,6 +28,10 @@ export async function syncStatefulServiceCredentials(config: DeployConfig): Prom
     await logDeployMessage(config, 'stateful sync', '开始迁移 SpiceDB datastore');
     // 创建或升级 SpiceDB 自己需要的 datastore 表结构。
     await migrateSpiceDbDatastore(config);
+
+    await logDeployMessage(config, 'stateful sync', '开始发布 SpiceDB schema');
+    // 把仓库里的 spicedb/schema.zed 写入 SpiceDB，让后续 API 服务启动即可使用授权模型。
+    await publishSpiceDbSchema(config);
 
     await logDeployMessage(config, 'stateful sync', '开始同步 MongoDB root 凭据');
     // 如果 MongoDB 数据卷已经初始化，离线更新 root 用户密码。

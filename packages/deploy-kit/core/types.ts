@@ -194,6 +194,8 @@ export type DeployConfig = {
     runtimePrismaDir: string;
     /** 开源版初始化 SQL 目录；源码运行时指向 database/seeds/open-source，打包后指向 runtime/seed-sql。 */
     runtimeSeedSqlDir: string;
+    /** SpiceDB schema 文件；源码运行时指向 spicedb/schema.zed，打包后指向 runtime/spicedb/schema.zed。 */
+    runtimeSpiceDbSchemaPath: string;
     /** 用户选择的部署根目录，例如 Windows 的 C:\shiro-nya 或 Linux 的 /opt/shiro-nya。 */
     targetRoot: string;
     /** 目标 Docker 配置目录，通常是 `${targetRoot}/docker`。 */

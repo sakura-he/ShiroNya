@@ -946,6 +946,9 @@ importers:
 
   packages/deploy-kit:
     dependencies:
+      '@authzed/authzed-node':
+        specifier: ^1.6.1
+        version: 1.6.1
       '@clack/prompts':
         specifier: ^1.5.1
         version: 1.5.1

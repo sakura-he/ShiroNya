@@ -47,5 +47,16 @@ export const runtimeSeedSqlDir = runningFromSource
     ? nodePath.join(deployToolRoot, '..', '..', 'database', 'seeds', 'open-source')
     : nodePath.join(deployToolRoot, 'runtime', 'seed-sql');
 
+/**
+ * SpiceDB schema 文件路径。
+ *
+ * 源码运行时直接读取仓库根目录的 `spicedb/schema.zed`，避免 deploy-kit 和项目各维护一份 schema。
+ * 打包运行时读取 `deploy_script/runtime/spicedb/schema.zed`，该文件由 tsup 构建成功后从同一份源码 schema 复制过去，
+ * 后续 release 脚本会把它压缩编码进单文件部署脚本。
+ */
+export const runtimeSpiceDbSchemaPath = runningFromSource
+    ? nodePath.join(deployToolRoot, '..', '..', 'spicedb', 'schema.zed')
+    : nodePath.join(deployToolRoot, 'runtime', 'spicedb', 'schema.zed');
+
 /** 终端顶部 Logo 动画帧文件，UI 启动时会读取它渲染动效。 */
 export const deployHeaderLogoPath = nodePath.join(deployToolRoot, 'assets', 'deploy-header-keyframes.json');

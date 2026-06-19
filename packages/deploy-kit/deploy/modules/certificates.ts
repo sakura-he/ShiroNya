@@ -11,7 +11,6 @@ import type { DeployConfig } from '../../core/types.ts';
  * 这些证书主要用于容器之间的安全通信，例如：
  * - admin-api 调用 app-api 的 gRPC 管理接口。
  * - API 服务访问 Cerbos。
- * - Promtail 推送日志到 Loki gateway。
  *
  * 设计原则：
  * - 如果证书目录已经完整存在，默认不覆盖，避免每次部署都让服务证书变化。
@@ -44,17 +43,22 @@ function certDirComplete(certDir: string): boolean {
  * 生成证书序列号。
  *
  * 证书序列号需要是正整数，不能是空值。
- * `replace(/^00+/, '')` 会去掉开头多余的 00：
- * - `^` 表示字符串开头。
- * - `00+` 表示两个或更多连续的 0。
- * - 如果去掉后为空，就用 `01` 兜底。
+ * X.509 serialNumber 是 ASN.1 INTEGER：
+ * - 如果最高位是 1，一些 Go 版本会把它当作负数并拒绝加载证书。
+ * - 所以这里把第一个字节强制压到 0x01~0x7f，保证整数一定是正数。
+ * - `replace(/^00+/, '')` 仍然保留，用于去掉理论上的多余前导 00。
  */
 function createSerialNumber(): string {
     // 生成 16 字节随机数，作为证书序列号的随机来源。
-    const bytes = forge.random.getBytesSync(16);
+    const bytes = forge.util.createBuffer(forge.random.getBytesSync(16));
+    const firstByte = bytes.at(0);
+    // `(firstByte & 0x7f) || 0x01` 的含义：
+    // - `& 0x7f` 会把最高位清零，避免 ASN.1 INTEGER 被解析成负数。
+    // - `|| 0x01` 避免第一个字节变成 0，减少前导 0 造成的歧义。
+    bytes.setAt(0, (firstByte & 0x7f) || 0x01);
 
     // 转成十六进制字符串，便于写入 X.509 证书 serialNumber 字段。
-    const hex = forge.util.bytesToHex(bytes);
+    const hex = forge.util.bytesToHex(bytes.getBytes());
 
     // 去掉开头连续的 00，避免序列号被解释成带多余前导 0 的值。
     return hex.replace(/^00+/, '') || '01';
@@ -266,11 +270,12 @@ async function generateCertificateSet(certSet: CertificateSet): Promise<void> {
 /**
  * 确保部署所需的所有 TLS 证书存在。
  *
- * 这里定义了四套证书：
+ * 这里定义了三套证书：
  * 1. app-user-admin-grpc：admin-api 调用 app-api 管理 gRPC。
  * 2. app-api-cerbos：app-api 访问自己的 Cerbos。
  * 3. admin-api-cerbos：admin-api 访问自己的 Cerbos。
- * 4. loki：Promtail 到 Loki gateway 的日志链路。
+ *
+ * Loki/Promtail/Grafana 在同一个 Docker 内部网络里使用 HTTP 通信，不再为开源本地部署生成 Loki mTLS 证书。
  */
 export async function ensureDeploymentCertificates(
     config: DeployConfig,
@@ -308,15 +313,6 @@ export async function ensureDeploymentCertificates(
             output: nodePath.join(certRoot, 'admin-api-cerbos', 'tls'),
             serverCommonName: 'admin-cerbos-server',
             serverDnsNames: ['localhost', 'admin-cerbos-server', 'admin-api-cerbos', 'admin-api-cerbos-grpc-proxy'],
-            serverIpAddresses: config.certServerIps
-        },
-        {
-            // Promtail 推送日志到 Loki gateway 时使用这套证书。
-            caCommonName: 'Loki TLS CA',
-            clientCommonName: 'loki-promtail-client',
-            output: nodePath.join(certRoot, 'loki', 'tls'),
-            serverCommonName: 'loki-gateway',
-            serverDnsNames: ['localhost', 'loki', 'loki-gateway'],
             serverIpAddresses: config.certServerIps
         }
     ];

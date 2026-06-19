@@ -20,7 +20,7 @@ import { syncStatefulServiceCredentials } from './stateful-sync.ts';
  * 顺序说明：
  * 1. 先拉镜像，避免后面启动服务时才发现镜像下载失败。
  * 2. 拉完镜像后刷新应用环境文件，可以读取镜像内置 `.env.production` 作为默认值。
- * 3. 同步 PostgreSQL/SpiceDB/MongoDB 这类有状态服务的账号和库。
+ * 3. 同步 PostgreSQL/SpiceDB/MongoDB 这类有状态服务的账号和库，并发布 SpiceDB schema。
  * 4. 同步业务数据库结构。
  * 5. 执行开源版初始化 SQL，填充账号、权限、菜单和演示数据。
  * 6. 启动 Compose 服务。

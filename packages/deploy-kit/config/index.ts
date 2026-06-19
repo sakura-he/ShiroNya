@@ -13,7 +13,7 @@ import {
     promptPassword,
     promptSelect
 } from '../ui/ink-prompts.ts';
-import { runtimeDockerDir, runtimePrismaDir, runtimeSeedSqlDir } from '../core/paths.ts';
+import { runtimeDockerDir, runtimePrismaDir, runtimeSeedSqlDir, runtimeSpiceDbSchemaPath } from '../core/paths.ts';
 import type { DeployConfig, GhcrMode, SecretMode } from '../core/types.ts';
 import { shiroNyaAppImageRegistry, shiroNyaAppImageTag } from '../deploy/modules/constants.ts';
 
@@ -759,6 +759,7 @@ function buildConfig(answers: DeployAnswers): DeployConfig {
         runtimeDockerDir,
         runtimePrismaDir,
         runtimeSeedSqlDir,
+        runtimeSpiceDbSchemaPath,
         targetRoot,
         targetDockerDir,
         targetLogDir,
