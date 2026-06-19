@@ -48,6 +48,7 @@ type DeployAnswers = {
     adminApiPort?: string;
     appApiPort?: string;
     adminWebPort?: string;
+    grafanaPort?: string;
     adminWebPublicOrigin?: string;
     adminApiPublicOrigin?: string;
     appApiPublicOrigin?: string;
@@ -337,7 +338,9 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
                 // 多个 IP 用英文逗号分隔，buildConfig 里会 split(',')。
                 answers.certServerIpsInput = await promptNonEmpty(
                     '证书 SAN IP 列表（英文逗号分隔）',
-                    answers.certServerIpsInput ?? process.env.SHIRO_NYA_CERT_SERVER_IPS ?? `127.0.0.1,${redpandaOutsideHost}`,
+                    answers.certServerIpsInput ??
+                        process.env.SHIRO_NYA_CERT_SERVER_IPS ??
+                        `127.0.0.1,${redpandaOutsideHost}`,
                     allowBack
                 );
             }
@@ -354,8 +357,12 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
         },
         {
             async run({ allowBack }) {
-                // app-api 是应用侧接口服务；默认 3001 和项目开发配置保持一致。
-                answers.appApiPort = await promptNonEmpty('App API HTTP 端口', answers.appApiPort ?? '3001', allowBack);
+                // app-api 是应用侧接口服务；部署默认使用 57303，避开 Windows 常见的 2977-3076 动态保留端口段。
+                answers.appApiPort = await promptNonEmpty(
+                    'App API HTTP 端口',
+                    answers.appApiPort ?? '57303',
+                    allowBack
+                );
             }
         },
         {
@@ -364,6 +371,17 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
                 answers.adminWebPort = await promptNonEmpty(
                     'Admin Web 宿主端口',
                     answers.adminWebPort ?? '57301',
+                    allowBack
+                );
+            }
+        },
+        {
+            async run({ allowBack }) {
+                // Grafana 默认宿主端口使用 57302，避开 Windows 常见的 3077-3176 动态保留端口段。
+                // 容器内部仍然是 Grafana 官方默认 3000；这里问的是宿主机浏览器访问用的端口。
+                answers.grafanaPort = await promptNonEmpty(
+                    'Grafana 宿主端口',
+                    answers.grafanaPort ?? '57302',
                     allowBack
                 );
             }
@@ -720,6 +738,7 @@ function buildConfig(answers: DeployAnswers): DeployConfig {
     const adminApiPort = ensureRequired(answers.adminApiPort, 'adminApiPort');
     const appApiPort = ensureRequired(answers.appApiPort, 'appApiPort');
     const adminWebPort = ensureRequired(answers.adminWebPort, 'adminWebPort');
+    const grafanaPort = ensureRequired(answers.grafanaPort, 'grafanaPort');
     const adminApiPublicOrigin = normalizePublicOrigin(
         ensureRequired(answers.adminApiPublicOrigin, 'adminApiPublicOrigin'),
         adminApiPort,
@@ -762,6 +781,8 @@ function buildConfig(answers: DeployAnswers): DeployConfig {
             ADMIN_API_PORT: adminApiPort,
             APP_API_PORT: appApiPort,
             ADMIN_WEB_PORT: adminWebPort,
+            // Grafana 只给浏览器和运维查看日志/链路使用，不参与 Better Auth/CORS 派生。
+            GRAFANA_PORT: grafanaPort,
             ADMIN_WEB_PUBLIC_ORIGIN: adminWebPublicOrigin,
             ADMIN_API_PUBLIC_ORIGIN: adminApiPublicOrigin,
             APP_API_PUBLIC_ORIGIN: appApiPublicOrigin,

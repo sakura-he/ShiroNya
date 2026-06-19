@@ -6,7 +6,7 @@ import nodePath from 'node:path';
 
 import type { DeployConfig } from '../../core/types.ts';
 import { shiroNyaAppImage } from './constants.ts';
-import { databaseUrl, mongodbUrl } from './connection-strings.ts';
+import { containerDatabaseUrl, containerMongodbUrl } from './connection-strings.ts';
 import { logDeployMessage } from './command.ts';
 
 /**
@@ -20,8 +20,33 @@ import { logDeployMessage } from './command.ts';
  *
  * 新手注意：
  * - `.env` 不是 TypeScript 对象，最终必须写成 `KEY=value` 的纯文本。
- * - 应用容器里的地址大量使用 `127.0.0.1`，是因为 compose 内部通过 sidecar/proxy/端口映射组织服务。
+ * - 主 `.env` 给 Docker Compose 和宿主机部署步骤使用；应用 `.env.production` 给容器里的 Node.js 进程使用。
+ * - 宿主机访问容器要走 `127.0.0.1:宿主端口`；容器访问另一个容器要走 Compose 服务名，例如 `shiro-nya-postgres:5432`。
  */
+
+/** Docker bridge 网络里 Admin Redis 服务名。 */
+const ADMIN_REDIS_SERVICE_HOST = 'shiro-nya-admin-redis';
+
+/** Docker bridge 网络里 App Redis 服务名。 */
+const APP_REDIS_SERVICE_HOST = 'shiro-nya-app-redis';
+
+/** Docker bridge 网络里 SpiceDB gRPC 服务地址；50051 是 SpiceDB 容器内部 gRPC 端口。 */
+const SPICEDB_CONTAINER_ENDPOINT = 'admin-api-spicedb:50051';
+
+/** Docker bridge 网络里 Redpanda Kafka broker 地址；9092 是容器内部 Kafka listener。 */
+const REDPANDA_CONTAINER_BROKER = 'shiro-nya-redpanda:9092';
+
+/** Docker bridge 网络里 app-api Cerbos gRPC 地址；3592 是 app-api Cerbos 配置里的明文 gRPC 端口。 */
+const APP_CERBOS_CONTAINER_ENDPOINT = 'app-api-cerbos:3592';
+
+/** Docker bridge 网络里 admin-api Cerbos gRPC 地址；3692 是 admin-api Cerbos 配置里的明文 gRPC 端口。 */
+const ADMIN_CERBOS_CONTAINER_ENDPOINT = 'admin-api-cerbos:3692';
+
+/** admin-api 连接 app-api gRPC 时使用服务名；app-api 容器会在 50051 监听。 */
+const APP_API_GRPC_CLIENT_HOST = 'app-api';
+
+/** 容器之间访问 Redis 时使用 Redis 容器内部端口，不使用映射到宿主机的端口。 */
+const REDIS_CONTAINER_PORT = '6379';
 
 /**
  * 把键值对象格式化成 env 文件文本。
@@ -30,11 +55,13 @@ import { logDeployMessage } from './command.ts';
  * 这里不额外加引号，因为当前配置值由向导生成或用户输入，调用方需要保证值适合 env 文件格式。
  */
 export function formatEnv(values: Record<string, string>): string {
-    return Object.entries(values)
-        // Object.entries 会把对象转成 [key, value] 数组；map 再把每一项拼成 env 行。
-        .map(([key, value]) => `${key}=${value}`)
-        // os.EOL 使用当前系统换行符，Windows 下是 CRLF，Linux/macOS 下是 LF。
-        .join(os.EOL);
+    return (
+        Object.entries(values)
+            // Object.entries 会把对象转成 [key, value] 数组；map 再把每一项拼成 env 行。
+            .map(([key, value]) => `${key}=${value}`)
+            // os.EOL 使用当前系统换行符，Windows 下是 CRLF，Linux/macOS 下是 LF。
+            .join(os.EOL)
+    );
 }
 
 /**
@@ -160,7 +187,7 @@ function adminWebOrigins(config: DeployConfig): string {
 
 /** 生成 app-api 认证域和跨域白名单。 */
 function appOrigins(config: DeployConfig): string {
-    const appApiPort = configuredPort(config, 'APP_API_PORT', '3001');
+    const appApiPort = configuredPort(config, 'APP_API_PORT', '57303');
     const adminWebPort = configuredPort(config, 'ADMIN_WEB_PORT', '57301');
     const appApiPublicOrigin = configuredOrigin(config, 'APP_API_PUBLIC_ORIGIN', appApiPort);
     const adminWebPublicOrigin = configuredOrigin(config, 'ADMIN_WEB_PUBLIC_ORIGIN', adminWebPort);
@@ -198,11 +225,12 @@ function applicationEnvOverrides(config: DeployConfig, service: 'admin-api' | 'a
     // admin-api 和 app-api 的 Redis 用户、端口不同，下面用 isAdmin 分支选择。
     const isAdmin = service === 'admin-api';
     const redisScope = isAdmin ? 'ADMIN' : 'APP';
-    const redisPort = isAdmin ? (config.env.ADMIN_REDIS_PORT ?? '17379') : (config.env.APP_REDIS_PORT ?? '26379');
+    const redisHost = isAdmin ? ADMIN_REDIS_SERVICE_HOST : APP_REDIS_SERVICE_HOST;
+    const redisPort = REDIS_CONTAINER_PORT;
     const redisUser = isAdmin ? config.env.ADMIN_REDIS_USER : config.env.APP_REDIS_USER;
     const redisPassword = isAdmin ? config.env.ADMIN_REDIS_PASSWORD : config.env.APP_REDIS_PASSWORD;
     const adminApiPort = configuredPort(config, 'ADMIN_API_PORT', '57300');
-    const appApiPort = configuredPort(config, 'APP_API_PORT', '3001');
+    const appApiPort = configuredPort(config, 'APP_API_PORT', '57303');
     const adminApiPublicOrigin = configuredOrigin(config, 'ADMIN_API_PUBLIC_ORIGIN', adminApiPort);
     const appApiPublicOrigin = configuredOrigin(config, 'APP_API_PUBLIC_ORIGIN', appApiPort);
     const adminOrigins = adminWebOrigins(config);
@@ -231,9 +259,10 @@ function applicationEnvOverrides(config: DeployConfig, service: 'admin-api' | 'a
         // HTTPS 公开访问时必须启用 secure cookie；本地 HTTP 部署保持 false。
         ADMIN_BETTER_AUTH_COOKIE_SECURE: String(isHttpsOrigin(adminApiPublicOrigin)),
         APP_BETTER_AUTH_COOKIE_SECURE: String(isHttpsOrigin(appApiPublicOrigin)),
-        // admin-api 作为客户端访问 app-api gRPC；app-api 在 0.0.0.0 监听，admin-api 通过 127.0.0.1 连接。
+        // app-api 自己监听 0.0.0.0，表示允许 Docker 网络里的其他容器访问这个 gRPC 端口。
         APP_USER_ADMIN_GRPC_HOST: '0.0.0.0',
-        APP_USER_ADMIN_GRPC_CLIENT_HOST: '127.0.0.1',
+        // admin-api 作为客户端访问 app-api gRPC；在 bridge 网络里必须写 app-api 服务名，不能写 127.0.0.1。
+        APP_USER_ADMIN_GRPC_CLIENT_HOST: APP_API_GRPC_CLIENT_HOST,
         APP_USER_ADMIN_GRPC_PORT: '50051',
         APP_USER_ADMIN_GRPC_TLS_CA_PATH: '/app/certs/app-user-admin-grpc/ca.crt',
         APP_USER_ADMIN_GRPC_TLS_SERVER_CERT_PATH: '/app/certs/app-user-admin-grpc/server.crt',
@@ -241,42 +270,45 @@ function applicationEnvOverrides(config: DeployConfig, service: 'admin-api' | 'a
         APP_USER_ADMIN_GRPC_TLS_CLIENT_CERT_PATH: '/app/certs/app-user-admin-grpc/client.crt',
         APP_USER_ADMIN_GRPC_TLS_CLIENT_KEY_PATH: '/app/certs/app-user-admin-grpc/client.key',
         APP_USER_ADMIN_GRPC_TLS_SERVER_NAME: 'localhost',
-        // 两个数据库 URL 都写入，便于 admin-api/app-api 中需要跨库配置的场景。
-        ADMIN_DATABASE_URL: databaseUrl(config, adminDatabase),
-        APP_DATABASE_URL: databaseUrl(config, appDatabase),
-        MONGODB_URI: mongodbUrl(config),
+        // 两个数据库 URL 都写入，便于 admin-api/app-api 中需要跨库配置的场景；容器内统一走 PostgreSQL 服务名。
+        ADMIN_DATABASE_URL: containerDatabaseUrl(config, adminDatabase),
+        APP_DATABASE_URL: containerDatabaseUrl(config, appDatabase),
+        // app-api 使用 MongoDB；admin-api 写入这个值不会伤害运行，统一覆盖可以避免镜像默认值残留。
+        MONGODB_URI: containerMongodbUrl(config),
         // 通用 REDIS_* 给旧式或共享 Redis 配置读取；下面的 ADMIN_/APP_ 前缀给明确服务读取。
-        REDIS_HOST: '127.0.0.1',
+        REDIS_HOST: redisHost,
         REDIS_PORT: redisPort,
         REDIS_USER: redisUser,
         REDIS_PASSWORD: redisPassword,
         // 计算属性名：`${redisScope}_REDIS_HOST` 会变成 ADMIN_REDIS_HOST 或 APP_REDIS_HOST。
-        [`${redisScope}_REDIS_HOST`]: '127.0.0.1',
+        [`${redisScope}_REDIS_HOST`]: redisHost,
         [`${redisScope}_REDIS_PORT`]: redisPort,
         [`${redisScope}_REDIS_USER`]: redisUser,
         [`${redisScope}_REDIS_PASSWORD`]: redisPassword,
-        ADMIN_REDIS_HOST: '127.0.0.1',
-        ADMIN_REDIS_PORT: config.env.ADMIN_REDIS_PORT ?? '17379',
+        ADMIN_REDIS_HOST: ADMIN_REDIS_SERVICE_HOST,
+        ADMIN_REDIS_PORT: REDIS_CONTAINER_PORT,
         ADMIN_REDIS_USER: config.env.ADMIN_REDIS_USER,
         ADMIN_REDIS_PASSWORD: config.env.ADMIN_REDIS_PASSWORD,
-        APP_REDIS_HOST: '127.0.0.1',
-        APP_REDIS_PORT: config.env.APP_REDIS_PORT ?? '26379',
+        APP_REDIS_HOST: APP_REDIS_SERVICE_HOST,
+        APP_REDIS_PORT: REDIS_CONTAINER_PORT,
         APP_REDIS_USER: config.env.APP_REDIS_USER,
         APP_REDIS_PASSWORD: config.env.APP_REDIS_PASSWORD,
-        // 应用容器访问 SpiceDB/Cerbos 时走容器内部本地端口或本地代理。
-        ADMIN_SPICEDB_ENDPOINT: '127.0.0.1:50052',
+        // 应用容器访问 SpiceDB 时走 SpiceDB 服务名和容器内部端口，不走映射到宿主机的 50052。
+        ADMIN_SPICEDB_ENDPOINT: SPICEDB_CONTAINER_ENDPOINT,
         ADMIN_SPICEDB_TOKEN: config.env.SPICEDB_GRPC_PRESHARED_KEY,
         ADMIN_SPICEDB_INSECURE: 'true',
         ADMIN_SPICEDB_TLS_ENABLED: 'false',
-        APP_SPICEDB_ENDPOINT: '127.0.0.1:50052',
+        APP_SPICEDB_ENDPOINT: SPICEDB_CONTAINER_ENDPOINT,
         APP_SPICEDB_TOKEN: config.env.SPICEDB_GRPC_PRESHARED_KEY,
         APP_SPICEDB_INSECURE: 'true',
         APP_SPICEDB_TLS_ENABLED: 'false',
-        ADMIN_SPICEDB_KAFKA_BROKERS: '127.0.0.1:19092',
-        APP_SPICEDB_KAFKA_BROKERS: '127.0.0.1:19092',
-        APP_CERBOS_ENDPOINT: '127.0.0.1:3592',
+        // Kafka 投影同步也走 Redpanda 容器内部 listener；19092 是给宿主机工具访问的外部 listener。
+        ADMIN_SPICEDB_KAFKA_BROKERS: REDPANDA_CONTAINER_BROKER,
+        APP_SPICEDB_KAFKA_BROKERS: REDPANDA_CONTAINER_BROKER,
+        // Cerbos 运行在独立容器里，应用容器用服务名连接各自的 Cerbos gRPC 端口。
+        APP_CERBOS_ENDPOINT: APP_CERBOS_CONTAINER_ENDPOINT,
         APP_CERBOS_TLS_ENABLED: 'false',
-        ADMIN_CERBOS_ENDPOINT: '127.0.0.1:3692',
+        ADMIN_CERBOS_ENDPOINT: ADMIN_CERBOS_CONTAINER_ENDPOINT,
         ADMIN_CERBOS_TLS_ENABLED: 'false'
     };
 }

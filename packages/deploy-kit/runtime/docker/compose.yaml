@@ -259,7 +259,9 @@ services:
         env_file:
             - ${GRAFANA_ENV_FILE:-/opt/shiro-nya/grafana-loki/.env}
         ports:
-            - '3100:3000'
+            # Windows Docker Desktop 常见的动态保留端口段会覆盖 3100，导致 Docker 显示已映射但宿主机无法监听。
+            # 因此宿主机端口默认使用 57302；容器内部仍然是 Grafana 官方默认端口 3000。
+            - '${GRAFANA_PORT:-57302}:3000'
         environment:
             GF_SECURITY_ADMIN_USER: admin
             GF_USERS_ALLOW_SIGN_UP: 'false'
@@ -290,34 +292,45 @@ services:
         image: ${SHIRO_NYA_IMAGE_REGISTRY:-ghcr.io/sakura-he}/admin-api:${SHIRO_NYA_IMAGE_TAG:-0.0.1}
         container_name: admin-api
         restart: unless-stopped
-        network_mode: host
         pull_policy: always
+        ports:
+            # 宿主机访问 Admin API 走用户配置的 ADMIN_API_PORT；容器内部应用也监听同一个端口。
+            - '${ADMIN_API_PORT:-57300}:${ADMIN_API_PORT:-57300}'
         environment:
             NODE_ENV: production
-            ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@127.0.0.1:15432/${ADMIN_POSTGRES_DB:-admin_api_db}
-            APP_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@127.0.0.1:15432/${APP_POSTGRES_DB:-app_api_db}
-            REDIS_HOST: 127.0.0.1
-            REDIS_PORT: ${ADMIN_REDIS_PORT:-17379}
+            ADMIN_API_PORT: ${ADMIN_API_PORT:-57300}
+            APP_API_PORT: ${APP_API_PORT:-57303}
+            ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@shiro-nya-postgres:5432/${ADMIN_POSTGRES_DB:-admin_api_db}
+            APP_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@shiro-nya-postgres:5432/${APP_POSTGRES_DB:-app_api_db}
+            REDIS_HOST: shiro-nya-admin-redis
+            REDIS_PORT: 6379
             REDIS_USER: ${ADMIN_REDIS_USER:?ADMIN_REDIS_USER is required}
             REDIS_PASSWORD: ${ADMIN_REDIS_PASSWORD:?ADMIN_REDIS_PASSWORD is required}
-            ADMIN_REDIS_HOST: 127.0.0.1
-            ADMIN_REDIS_PORT: ${ADMIN_REDIS_PORT:-17379}
+            ADMIN_REDIS_HOST: shiro-nya-admin-redis
+            ADMIN_REDIS_PORT: 6379
             ADMIN_REDIS_USER: ${ADMIN_REDIS_USER:?ADMIN_REDIS_USER is required}
             ADMIN_REDIS_PASSWORD: ${ADMIN_REDIS_PASSWORD:?ADMIN_REDIS_PASSWORD is required}
-            APP_REDIS_HOST: 127.0.0.1
-            APP_REDIS_PORT: ${APP_REDIS_PORT:-26379}
+            APP_REDIS_HOST: shiro-nya-app-redis
+            APP_REDIS_PORT: 6379
             APP_REDIS_USER: ${APP_REDIS_USER:?APP_REDIS_USER is required}
             APP_REDIS_PASSWORD: ${APP_REDIS_PASSWORD:?APP_REDIS_PASSWORD is required}
-            ADMIN_SPICEDB_ENDPOINT: 127.0.0.1:50052
+            ADMIN_SPICEDB_ENDPOINT: admin-api-spicedb:50051
             ADMIN_SPICEDB_TOKEN: ${SPICEDB_GRPC_PRESHARED_KEY:?SPICEDB_GRPC_PRESHARED_KEY is required}
             ADMIN_SPICEDB_INSECURE: 'true'
             ADMIN_SPICEDB_TLS_ENABLED: 'false'
-            APP_SPICEDB_ENDPOINT: 127.0.0.1:50052
+            APP_SPICEDB_ENDPOINT: admin-api-spicedb:50051
             APP_SPICEDB_TOKEN: ${SPICEDB_GRPC_PRESHARED_KEY:?SPICEDB_GRPC_PRESHARED_KEY is required}
             APP_SPICEDB_INSECURE: 'true'
             APP_SPICEDB_TLS_ENABLED: 'false'
-            ADMIN_SPICEDB_KAFKA_BROKERS: 127.0.0.1:19092
-            APP_SPICEDB_KAFKA_BROKERS: 127.0.0.1:19092
+            ADMIN_SPICEDB_KAFKA_BROKERS: shiro-nya-redpanda:9092
+            APP_SPICEDB_KAFKA_BROKERS: shiro-nya-redpanda:9092
+            ADMIN_CERBOS_ENDPOINT: admin-api-cerbos:3692
+            ADMIN_CERBOS_TLS_ENABLED: 'false'
+            APP_CERBOS_ENDPOINT: app-api-cerbos:3592
+            APP_CERBOS_TLS_ENABLED: 'false'
+            APP_USER_ADMIN_GRPC_HOST: 0.0.0.0
+            APP_USER_ADMIN_GRPC_CLIENT_HOST: app-api
+            APP_USER_ADMIN_GRPC_PORT: 50051
             LOKI_LOG_DIR: /var/log/shiro-nya/loki
             CERBOS_NO_TELEMETRY: '1'
         volumes:
@@ -342,41 +355,64 @@ services:
             timeout: 5s
             retries: 5
             start_period: 20s
+        depends_on:
+            - shiro-nya-postgres
+            - shiro-nya-admin-redis
+            - shiro-nya-app-redis
+            - shiro-nya-redpanda
+            - admin-api-spicedb
+            - admin-api-cerbos
+            - app-api-cerbos
+            - app-api
 
     app-api:
         # app-api 和 admin-api 使用同一个镜像仓库与 tag，确保一次部署里的后端版本一致。
         image: ${SHIRO_NYA_IMAGE_REGISTRY:-ghcr.io/sakura-he}/app-api:${SHIRO_NYA_IMAGE_TAG:-0.0.1}
         container_name: app-api
         restart: unless-stopped
-        network_mode: host
         pull_policy: always
+        ports:
+            # 宿主机访问 App API 走用户配置的 APP_API_PORT；容器内部应用也监听同一个端口。
+            - '${APP_API_PORT:-57303}:${APP_API_PORT:-57303}'
+        expose:
+            # 50051 是 app-api 提供给 admin-api 的内部 gRPC 端口，只在 shiro-nya Docker 网络里使用。
+            - '50051'
         environment:
             NODE_ENV: production
-            APP_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@127.0.0.1:15432/${APP_POSTGRES_DB:-app_api_db}
-            ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@127.0.0.1:15432/${ADMIN_POSTGRES_DB:-admin_api_db}
-            MONGODB_URI: mongodb://${MONGO_USER:?MONGO_USER is required}:${MONGO_PASSWORD_URLENCODED:?MONGO_PASSWORD_URLENCODED is required}@127.0.0.1:27017/${MONGO_DB:?MONGO_DB is required}?authSource=admin
-            REDIS_HOST: 127.0.0.1
-            REDIS_PORT: ${APP_REDIS_PORT:-26379}
+            ADMIN_API_PORT: ${ADMIN_API_PORT:-57300}
+            APP_API_PORT: ${APP_API_PORT:-57303}
+            APP_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@shiro-nya-postgres:5432/${APP_POSTGRES_DB:-app_api_db}
+            ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD_URLENCODED:?POSTGRES_PASSWORD_URLENCODED is required}@shiro-nya-postgres:5432/${ADMIN_POSTGRES_DB:-admin_api_db}
+            MONGODB_URI: mongodb://${MONGO_USER:?MONGO_USER is required}:${MONGO_PASSWORD_URLENCODED:?MONGO_PASSWORD_URLENCODED is required}@shiro-nya-mongodb:27017/${MONGO_DB:?MONGO_DB is required}?authSource=admin
+            REDIS_HOST: shiro-nya-app-redis
+            REDIS_PORT: 6379
             REDIS_USER: ${APP_REDIS_USER:?APP_REDIS_USER is required}
             REDIS_PASSWORD: ${APP_REDIS_PASSWORD:?APP_REDIS_PASSWORD is required}
-            APP_REDIS_HOST: 127.0.0.1
-            APP_REDIS_PORT: ${APP_REDIS_PORT:-26379}
+            APP_REDIS_HOST: shiro-nya-app-redis
+            APP_REDIS_PORT: 6379
             APP_REDIS_USER: ${APP_REDIS_USER:?APP_REDIS_USER is required}
             APP_REDIS_PASSWORD: ${APP_REDIS_PASSWORD:?APP_REDIS_PASSWORD is required}
-            ADMIN_REDIS_HOST: 127.0.0.1
-            ADMIN_REDIS_PORT: ${ADMIN_REDIS_PORT:-17379}
+            ADMIN_REDIS_HOST: shiro-nya-admin-redis
+            ADMIN_REDIS_PORT: 6379
             ADMIN_REDIS_USER: ${ADMIN_REDIS_USER:?ADMIN_REDIS_USER is required}
             ADMIN_REDIS_PASSWORD: ${ADMIN_REDIS_PASSWORD:?ADMIN_REDIS_PASSWORD is required}
-            APP_SPICEDB_ENDPOINT: 127.0.0.1:50052
+            APP_SPICEDB_ENDPOINT: admin-api-spicedb:50051
             APP_SPICEDB_TOKEN: ${SPICEDB_GRPC_PRESHARED_KEY:?SPICEDB_GRPC_PRESHARED_KEY is required}
             APP_SPICEDB_INSECURE: 'true'
             APP_SPICEDB_TLS_ENABLED: 'false'
-            ADMIN_SPICEDB_ENDPOINT: 127.0.0.1:50052
+            ADMIN_SPICEDB_ENDPOINT: admin-api-spicedb:50051
             ADMIN_SPICEDB_TOKEN: ${SPICEDB_GRPC_PRESHARED_KEY:?SPICEDB_GRPC_PRESHARED_KEY is required}
             ADMIN_SPICEDB_INSECURE: 'true'
             ADMIN_SPICEDB_TLS_ENABLED: 'false'
-            APP_SPICEDB_KAFKA_BROKERS: 127.0.0.1:19092
-            ADMIN_SPICEDB_KAFKA_BROKERS: 127.0.0.1:19092
+            APP_SPICEDB_KAFKA_BROKERS: shiro-nya-redpanda:9092
+            ADMIN_SPICEDB_KAFKA_BROKERS: shiro-nya-redpanda:9092
+            APP_CERBOS_ENDPOINT: app-api-cerbos:3592
+            APP_CERBOS_TLS_ENABLED: 'false'
+            ADMIN_CERBOS_ENDPOINT: admin-api-cerbos:3692
+            ADMIN_CERBOS_TLS_ENABLED: 'false'
+            APP_USER_ADMIN_GRPC_HOST: 0.0.0.0
+            APP_USER_ADMIN_GRPC_CLIENT_HOST: app-api
+            APP_USER_ADMIN_GRPC_PORT: 50051
             OTEL_SERVICE_NAME: app-api
             LOKI_LOG_DIR: /var/log/shiro-nya/loki
             CERBOS_NO_TELEMETRY: '1'
@@ -396,11 +432,20 @@ services:
         healthcheck:
             test:
                 - CMD-SHELL
-                - node -e "fetch('http://127.0.0.1:${APP_API_PORT:-3001}/app/api/auth/get-session').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+                - node -e "fetch('http://127.0.0.1:${APP_API_PORT:-57303}/app/api/auth/get-session').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
             interval: 30s
             timeout: 5s
             retries: 5
             start_period: 20s
+        depends_on:
+            - shiro-nya-postgres
+            - shiro-nya-app-redis
+            - shiro-nya-admin-redis
+            - shiro-nya-mongodb
+            - shiro-nya-redpanda
+            - admin-api-spicedb
+            - app-api-cerbos
+            - admin-api-cerbos
 
     admin-web:
         # admin-web 是静态前端镜像，同样从公开仓库拉取，不在用户机器上拉源码构建。
