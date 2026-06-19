@@ -117,14 +117,14 @@ describe('SystemDictsService', () => {
         });
     });
 
-    it('创建字典 DTO 应使用 Zod 修剪字段并把空描述转为 null', () => {
+    it('创建字典 DTO 应使用 Zod 修剪字段并接受空描述 null', () => {
         const result = CreateDictSchema.parse({
             category: ' system ',
             name: ' 用户状态 ',
             value: ' user_status ',
-            description: '',
-            status: '1',
-            sortOrder: '10'
+            description: null,
+            status: DictEnabledStatus,
+            sortOrder: 10
         });
 
         expect(result).toEqual({
@@ -428,14 +428,14 @@ describe('SystemDictsService', () => {
         ]);
     });
 
-    it('查询下拉选项时，应将字符串 false 解析为不过滤禁用项', async () => {
+    it('查询下拉选项时，应接受布尔 false 作为不过滤禁用项', async () => {
         const dict = createDictRecord();
         mockPrismaService.dict.findUnique.mockResolvedValue(dict);
         mockPrismaService.dictKey.findMany.mockResolvedValue([]);
 
         const query = QueryDictOptionsSchema.parse({
-            dictId: String(dict.id),
-            enabledOnly: 'false'
+            dictId: dict.id,
+            enabledOnly: false
         });
         await service.getDictOptions(query);
 

@@ -535,8 +535,8 @@ describe('AuthzPermissionService', () => {
             ['viewer', 'creator'],
             [...CORE_MANAGER_RELATIONS.user_manager]
         );
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1, '角色1');
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(2, '角色2');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1);
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(2);
     });
 
     it('批量应用无变化矩阵时，应直接返回最新矩阵且不写源表或 SpiceDB', async () => {

@@ -135,9 +135,9 @@ describe('SystemRbacAssignmentsService', () => {
             skipDuplicates: true
         });
         expect(mockGraphService.applyRebuild).toHaveBeenCalledWith(['u1']);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1, 'role_1');
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(2, 'role_2');
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(3, 'role_3');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1);
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(2);
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(3);
     });
 
     it('replaceUserGroups 替换用户所属用户组并刷新相关组角色状态', async () => {
@@ -156,7 +156,7 @@ describe('SystemRbacAssignmentsService', () => {
             skipDuplicates: true
         });
         expect(mockGraphService.applyRebuild).toHaveBeenCalledWith(['u1']);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(7, 'role_7');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(7);
     });
 
     it('replaceGroupMembers 替换组成员并按原成员和目标成员重建 effective', async () => {
@@ -178,7 +178,7 @@ describe('SystemRbacAssignmentsService', () => {
             skipDuplicates: true
         });
         expect(mockGraphService.applyRebuild).toHaveBeenCalledWith(['old_user', 'u1', 'u2']);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(3, 'role_3');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(3);
     });
 
     it('replaceGroupRoles 替换组角色并刷新组成员 effective', async () => {

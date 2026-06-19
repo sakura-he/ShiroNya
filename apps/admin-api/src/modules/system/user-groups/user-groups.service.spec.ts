@@ -206,7 +206,7 @@ describe('SystemUserGroupsService', () => {
             }
         });
         expect(mockRbacGraphService.applyRebuild).toHaveBeenCalledWith(['u1']);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1, '管理员');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1);
         expect(result).toMatchObject({
             id: 10,
             status: RbacStatus.DISABLE,
@@ -252,7 +252,7 @@ describe('SystemUserGroupsService', () => {
             }
         });
         expect(mockRbacGraphService.applyRebuild).toHaveBeenCalledWith(['u1']);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1, '管理员');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1);
     });
 
     it('查询用户组关系时，应从 RBAC 关系表和 effective 菜单读模型返回初始化 ID', async () => {

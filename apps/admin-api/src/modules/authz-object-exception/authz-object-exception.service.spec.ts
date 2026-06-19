@@ -316,7 +316,7 @@ describe('AuthzObjectExceptionService', () => {
                 }
             }
         ]);
-        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1, '管理员');
+        expect(mockAdminUserStateService.bumpRoleStateVersion).toHaveBeenCalledWith(1);
     });
 
     it('SpiceDB 写入失败时应回滚源表并尝试回滚 SpiceDB 关系', async () => {

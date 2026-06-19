@@ -39,6 +39,9 @@ jobs:
                   APP_DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma
               run: pnpm prisma:generate
 
+            - name: Build SpiceDB toolkit packages
+              run: pnpm --filter @spicedb-toolkit/nestjs... build
+
             - name: Run backend tests
               run: pnpm test
 
