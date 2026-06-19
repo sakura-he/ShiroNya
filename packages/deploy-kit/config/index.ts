@@ -74,7 +74,6 @@ type DeployAnswers = {
     appBetterAuthSecret?: string;
     jwtSigningKey?: string;
     timezone?: string;
-    grafanaAdminPassword?: string;
     ghcrMode?: GhcrMode;
     ghcrUsername?: string;
     ghcrToken?: string;
@@ -652,19 +651,6 @@ function createConfigSteps(answers: DeployAnswers): WizardStep[] {
             }
         },
         {
-            isInteractive: isManualSecretMode,
-            async run({ allowBack }) {
-                // Grafana 密码写入 Grafana env，新的 Grafana 数据卷首次启动时会用它初始化 admin 密码。
-                await promptPasswordOrGenerate(
-                    answers,
-                    'grafanaAdminPassword',
-                    'Grafana admin 密码',
-                    generateRandomSecretString,
-                    allowBack
-                );
-            }
-        },
-        {
             async run({ allowBack }) {
                 // GHCR 是 GitHub Container Registry；私有镜像需要 login，公开镜像可以 skip。
                 answers.ghcrMode = await promptSelect(
@@ -830,8 +816,9 @@ function buildConfig(answers: DeployAnswers): DeployConfig {
             TZ: ensureRequired(answers.timezone, 'timezone')
         },
         grafanaEnv: {
-            // Grafana 单独 env；公开部署按新 Grafana 实例初始化，不再对已有数据卷执行密码同步。
-            GF_SECURITY_ADMIN_PASSWORD: ensureRequired(answers.grafanaAdminPassword, 'grafanaAdminPassword')
+            // Grafana 官方镜像默认管理员是 admin/admin；这里显式写同样的默认密码，避免新手需要额外回答一个密码问题。
+            // 注意：Grafana 只会在 grafana-data 数据卷首次初始化时读取这个值，已有数据卷不会因为 env 变化自动改密码。
+            GF_SECURITY_ADMIN_PASSWORD: 'admin'
         }
     };
 }

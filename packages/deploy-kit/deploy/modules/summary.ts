@@ -128,7 +128,6 @@ export function summary(config: DeployConfig): string {
         `  ${nodePath.join(config.targetDockerDir, 'config', 'app-user-admin-grpc', 'tls')}`,
         `  ${nodePath.join(config.targetDockerDir, 'config', 'app-api-cerbos', 'tls')}`,
         `  ${nodePath.join(config.targetDockerDir, 'config', 'admin-api-cerbos', 'tls')}`,
-        `  ${nodePath.join(config.targetDockerDir, 'config', 'loki', 'tls')}`,
         '',
         ...serviceCredentialSummary(config),
         '',

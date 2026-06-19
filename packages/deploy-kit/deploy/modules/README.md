@@ -24,7 +24,7 @@
 ## 文件职责
 
 - `assets.ts`：复制 `runtime/docker` 模板到目标部署目录，生成 `compose.generated.yaml`，准备应用运行目录和 TLS 证书。
-- `certificates.ts`：生成 gRPC、Cerbos、Loki 使用的 CA/server/client 证书，证书完整时默认复用。
+- `certificates.ts`：生成 gRPC、Cerbos 使用的 CA/server/client 证书，证书完整时默认复用；Loki/Promtail/Grafana 在开源部署里走 Docker 内部 HTTP。
 - `command.ts`：统一执行外部命令，负责 stdout/stderr 原样写入部署日志、终端 UI 输出转发、Prisma CLI 解析。
 - `connection-strings.ts`：从 `DeployConfig` 生成 PostgreSQL、MongoDB、SpiceDB datastore 连接串。
 - `constants.ts`：存放部署模块共享常量，例如应用镜像仓库前缀。
