@@ -1,0 +1,124 @@
+# compiled output
+/dist
+/deploy_script
+/release
+/packages/deploy-kit/.deploy/
+/node_modules
+/build
+/bin
+
+# monorepo package outputs
+**/dist/
+**/node_modules/
+**/build/
+**/coverage/
+**/.vite/
+**/*.tsbuildinfo
+
+# Logs
+logs
+uploads
+chunks
+merge
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Kiro
+.kiro/
+
+# Codex
+.codex/
+!.codex/
+.codex/*
+!.codex/skills/
+!.codex/skills/**
+.codex-tmp/
+
+# dotenv environment variable files
+src/.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
+!apps/*/.env.*.example
+!apps/*/.env.remote_dev
+docker/.env
+
+# Docker deployment TLS assets are generated per machine by docker/deploy.sh.
+docker/config/**/tls/*.crt
+docker/config/**/tls/*.key
+!docker/config/**/tls/.gitkeep
+
+# Local runtime TLS assets synced/generated per machine.
+certs/**/*.crt
+certs/**/*.key
+!certs/**/.gitkeep
+
+# temp directory
+.temp
+.tmp
+.merge
+.chunks
+
+# Evolver local development memory and runtime artifacts
+.evolver/
+/memory/
+
+# Local backup snapshots
+backup/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+# 源码目录中的声明文件
+apps/**/*.d.ts
+libs/**/*.d.ts
+libs/prisma-admin/src/generated/
+libs/prisma-app/src/generated/
+/backups/
+
+# 本地 Loki Promtail 调试工具
+promtail-windows-amd64.exe
+.pnpm-store
+
+# Kiro 本地 SSH 配置（含明文凭据，禁止提交）
+.kiro
+.kiro/settings/mcp.json
+.kiro/settings/ssh-config.toml

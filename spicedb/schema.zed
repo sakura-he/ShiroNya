@@ -1,0 +1,192 @@
+definition user {}
+
+definition system {
+	relation admin: user | role#assigned
+	permission manage_all = admin
+}
+
+definition user_group {
+	relation member: user
+	relation enabled: user:*
+	relation authz_manager: user_group_manager
+	relation viewer: user | role#assigned
+	relation updater: user | role#assigned
+	relation deleter: user | role#assigned
+	relation member_assigner: user | role#assigned
+	relation role_assigner: user | role#assigned
+	permission active_member = member & enabled
+	permission view = viewer + updater + deleter + member_assigner + role_assigner + authz_manager->view
+	permission update = updater + authz_manager->update
+	permission delete = deleter + authz_manager->delete
+	permission assign_member = member_assigner + authz_manager->assign_member
+	permission assign_role = role_assigner + authz_manager->assign_role
+	permission manage = update + delete + assign_member + assign_role
+}
+
+definition role {
+	relation enabled: user:*
+	relation assignee: user | user_group#active_member
+	relation authz_manager: role_manager
+	relation viewer: user | role#assigned
+	relation updater: user | role#assigned
+	relation deleter: user | role#assigned
+	relation user_assigner: user | role#assigned
+	relation user_group_assigner: user | role#assigned
+	relation task_capability_assigner: user | role#assigned
+	relation task_resource_assigner: user | role#assigned
+	permission assigned = assignee & enabled
+	permission view = viewer + updater + deleter + user_assigner + user_group_assigner + task_capability_assigner + task_resource_assigner + authz_manager->view
+	permission update = updater + authz_manager->update
+	permission delete = deleter + authz_manager->delete
+	permission assign_user = user_assigner + authz_manager->assign_user
+	permission assign_user_group = user_group_assigner + authz_manager->assign_user_group
+	permission assign_task_capability = task_capability_assigner + authz_manager->assign_task_capability
+	permission assign_task_resource = task_resource_assigner + authz_manager->assign_task_resource
+	permission manage = update + delete + assign_user + assign_user_group + assign_task_capability + assign_task_resource
+}
+
+definition menu {
+	relation system: system
+	relation authz_manager: menu_manager
+	relation viewer: role#assigned
+	relation manager: role#assigned
+	relation inspector: user | role#assigned
+	relation updater: user | role#assigned
+	relation deleter: user | role#assigned
+	relation role_assigner: user | role#assigned
+	permission view = viewer + manager + system->manage_all
+	permission manage = manager + system->manage_all
+	permission inspect = manager + inspector + updater + deleter + role_assigner + authz_manager->view
+	permission update = updater + authz_manager->update
+	permission delete = deleter + authz_manager->delete
+	permission assign_role = role_assigner + authz_manager->assign_role
+}
+
+definition user_manager {
+	relation system: system
+	relation viewer: role
+	relation creator: role
+	relation updater: role
+	relation deleter: role
+	relation password_resetter: role
+	relation session_viewer: role
+	relation session_revoker: role
+	relation manager: role
+	permission view = viewer->assigned + creator->assigned + updater->assigned + deleter->assigned + password_resetter->assigned + session_viewer->assigned + session_revoker->assigned + manager->assigned + system->manage_all
+	permission list = view
+	permission create = creator->assigned + manager->assigned + system->manage_all
+	permission update = updater->assigned + manager->assigned + system->manage_all
+	permission delete = deleter->assigned + manager->assigned + system->manage_all
+	permission reset_password = password_resetter->assigned + manager->assigned + system->manage_all
+	permission view_session = session_viewer->assigned + session_revoker->assigned + manager->assigned + system->manage_all
+	permission revoke_session = session_revoker->assigned + manager->assigned + system->manage_all
+	permission manage = manager->assigned + system->manage_all
+}
+
+definition role_manager {
+	relation system: system
+	relation viewer: role
+	relation creator: role
+	relation updater: role
+	relation deleter: role
+	relation user_assigner: role
+	relation user_group_assigner: role
+	relation task_capability_assigner: role
+	relation task_resource_assigner: role
+	relation manager: role
+	permission view = viewer->assigned + creator->assigned + updater->assigned + deleter->assigned + user_assigner->assigned + user_group_assigner->assigned + task_capability_assigner->assigned + task_resource_assigner->assigned + manager->assigned + system->manage_all
+	permission list = view
+	permission create = creator->assigned + manager->assigned + system->manage_all
+	permission update = updater->assigned + manager->assigned + system->manage_all
+	permission delete = deleter->assigned + manager->assigned + system->manage_all
+	permission assign_user = user_assigner->assigned + manager->assigned + system->manage_all
+	permission assign_user_group = user_group_assigner->assigned + manager->assigned + system->manage_all
+	permission assign_task_capability = task_capability_assigner->assigned + manager->assigned + system->manage_all
+	permission assign_task_resource = task_resource_assigner->assigned + manager->assigned + system->manage_all
+	permission manage = manager->assigned + system->manage_all
+}
+
+definition menu_manager {
+	relation system: system
+	relation viewer: role
+	relation creator: role
+	relation updater: role
+	relation deleter: role
+	relation role_assigner: role
+	relation manager: role
+	permission view = viewer->assigned + creator->assigned + updater->assigned + deleter->assigned + role_assigner->assigned + manager->assigned + system->manage_all
+	permission list = view
+	permission create = creator->assigned + manager->assigned + system->manage_all
+	permission update = updater->assigned + manager->assigned + system->manage_all
+	permission delete = deleter->assigned + manager->assigned + system->manage_all
+	permission assign_role = role_assigner->assigned + manager->assigned + system->manage_all
+	permission manage = manager->assigned + system->manage_all
+}
+
+definition user_group_manager {
+	relation system: system
+	relation viewer: role
+	relation creator: role
+	relation updater: role
+	relation deleter: role
+	relation member_assigner: role
+	relation role_assigner: role
+	relation manager: role
+	permission view = viewer->assigned + creator->assigned + updater->assigned + deleter->assigned + member_assigner->assigned + role_assigner->assigned + manager->assigned + system->manage_all
+	permission list = view
+	permission create = creator->assigned + manager->assigned + system->manage_all
+	permission update = updater->assigned + manager->assigned + system->manage_all
+	permission delete = deleter->assigned + manager->assigned + system->manage_all
+	permission assign_member = member_assigner->assigned + manager->assigned + system->manage_all
+	permission assign_role = role_assigner->assigned + manager->assigned + system->manage_all
+	permission manage = manager->assigned + system->manage_all
+}
+
+definition admin_user {
+	relation manager: user_manager
+	relation self: user
+	relation viewer: user | role#assigned
+	relation updater: user | role#assigned
+	relation deleter: user | role#assigned
+	relation password_resetter: user | role#assigned
+	relation session_viewer: user | role#assigned
+	relation session_revoker: user | role#assigned
+	permission view = self + viewer + updater + deleter + password_resetter + session_viewer + session_revoker + manager->view
+	permission update = self + updater + manager->update
+	permission delete = deleter + manager->delete
+	permission reset_password = password_resetter + manager->reset_password
+	permission view_session = session_viewer + session_revoker + manager->view_session
+	permission revoke_session = session_revoker + manager->revoke_session
+	permission manage = update + delete + reset_password + revoke_session
+}
+
+definition task_manager {
+	relation system: system
+	relation viewer: role
+	relation creator: role
+	relation updater: role
+	relation deleter: role
+	relation runner: role
+	relation manager: role
+	permission view = viewer->assigned + creator->assigned + updater->assigned + deleter->assigned + runner->assigned + manager->assigned + system->manage_all
+	permission list = view
+	permission create = creator->assigned + manager->assigned + system->manage_all
+	permission update = updater->assigned + manager->assigned + system->manage_all
+	permission delete = deleter->assigned + manager->assigned + system->manage_all
+	permission run = runner->assigned + manager->assigned + system->manage_all
+	permission manage = manager->assigned + system->manage_all
+}
+
+definition task {
+	relation manager: task_manager
+	relation creator: user
+	relation viewer: user | role#assigned
+	relation updater: user | role#assigned
+	relation deleter: user | role#assigned
+	relation runner: user | role#assigned
+	permission view = creator + viewer + updater + deleter + runner + manager->view
+	permission update = creator + updater + manager->update
+	permission delete = deleter + manager->delete
+	permission run = runner + manager->run
+	permission manage = update + delete + run
+}

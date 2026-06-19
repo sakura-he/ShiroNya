@@ -1,0 +1,92 @@
+model Task {
+  id             Int            @id @default(autoincrement())
+  /// 任务创建人ID
+  userId         String         @map("user_id")
+  /// 任务名称
+  name           String         @unique @db.VarChar(191)
+  /// 任务备注，可选
+  remark         String?        @db.VarChar(191)
+  /// 任务时间表达式
+  cron           String         @db.VarChar(191)
+  /// 任务参数，可选
+  options        Json?
+  /// 执行策略: 立即执行即开启任务 执行一次:执行一次后关闭任务 手动执行:任务的执行需要手动操作
+  /// 任务参数，可选
+  params         Json?
+  /// 任务处理程序
+  handler        String         @db.VarChar(191)
+  /// 任务执行策略，默认为立即执行
+  strategy       TaskStrategy
+  /// 任务开启状态
+  status         TaskStatus
+  /// 最近一次运行状态
+  lastStatus     TaskLogStatus? @map("last_status")
+  /// 最近一次运行摘要
+  lastMessage    String?        @map("last_message") @db.VarChar(500)
+  /// 最近一次运行开始时间
+  lastStartedAt  DateTime?      @map("last_started_at")
+  /// 最近一次运行结束时间
+  lastFinishedAt DateTime?      @map("last_finished_at")
+  /// 最近一次运行耗时（毫秒）
+  lastDurationMs Int?           @map("last_duration_ms")
+  /// 创建时间，默认为当前时间
+  createdAt      DateTime       @default(now()) @map("created_at")
+  /// 更新时间，自动更新
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  logs           TaskLog[]
+
+  @@index([userId])
+  @@map("task")
+}
+
+model TaskLog {
+  id          Int           @id @default(autoincrement())
+  /// 任务ID
+  taskId      Int           @map("task_id")
+  /// 日志内容，可选
+  log         String?       @db.VarChar(500)
+  /// 任务状态，默认为停止
+  status      TaskLogStatus
+  /// 触发来源
+  triggeredBy String        @default("SCHEDULE") @map("triggered_by") @db.VarChar(64)
+  /// 触发人ID
+  actorId     String?       @map("actor_id") @db.VarChar(191)
+  /// 错误详情
+  error       String?
+  /// 执行开始时间
+  startedAt   DateTime      @default(now()) @map("started_at")
+  /// 执行结束时间
+  finishedAt  DateTime?     @map("finished_at")
+  /// 执行耗时（毫秒）
+  durationMs  Int?          @map("duration_ms")
+  /// 创建时间，默认为当前时间
+  createdAt   DateTime      @default(now()) @map("created_at")
+  task        Task          @relation(fields: [taskId], references: [id])
+
+  @@index([taskId, createdAt])
+  @@index([status])
+  @@map("task_log")
+}
+
+enum TaskStrategy {
+  /// 自动执行
+  AUTO
+  ///
+  ONCE_AUTO
+  /// 手动执行
+  MANUAL
+}
+
+enum TaskStatus {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}
+
+enum TaskLogStatus {
+  /// 成功
+  SUCCESS
+  /// 失败
+  FAILED
+}

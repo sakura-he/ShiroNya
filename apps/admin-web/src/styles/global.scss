@@ -1,0 +1,387 @@
+// 浏览器全局样式
+/* http://meyerweb.com/eric/tools/css/reset/
+v2.0 | 20110126
+License: none (public domain)
+*/
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    vertical-align: baseline;
+}
+
+/* HTML5 display-role reset for older browsers */
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
+    display: block;
+}
+
+ol,
+ul {
+    list-style: none;
+}
+
+blockquote,
+q {
+    quotes: none;
+}
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+    content: "";
+    content: none;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+:root {
+    --font-code:
+        "JetBrains Mono", "JetBrains Mono NL", ui-monospace, SFMono-Regular, Menlo, Monaco,
+        Consolas, "Liberation Mono", monospace;
+}
+
+// 浏览器原生控件暗黑模式
+html.dark {
+    color-scheme: dark;
+}
+
+html,
+body,
+#app {
+    font-family:
+        "Source Han Sans", Inter, "-apple-system", BlinkMacSystemFont, "PingFang SC",
+        "Hiragino Sans GB", "noto sans", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial,
+        sans-serif !important;
+    background-color: var(--color-bg-1);
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+    overflow-x: clip;
+}
+
+@supports not (overflow-x: clip) {
+    html,
+    body {
+        overflow-x: hidden;
+    }
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-5) content-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+}
+
+.arco-scrollbar > .arco-scrollbar-track {
+    background: transparent !important;
+    border: 0 !important;
+}
+
+.arco-scrollbar > .arco-scrollbar-track-direction-horizontal {
+    height: 10px !important;
+}
+
+.arco-scrollbar > .arco-scrollbar-track-direction-vertical {
+    width: 10px !important;
+}
+
+.arco-scrollbar > .arco-scrollbar-track > .arco-scrollbar-thumb > .arco-scrollbar-thumb-bar {
+    box-sizing: border-box;
+    background: var(--color-neutral-4) content-box !important;
+    border: 2px solid transparent;
+    border-radius: 999px;
+}
+
+.arco-scrollbar.arco-scrollbar-type-embed > .arco-scrollbar-track > .arco-scrollbar-thumb {
+    opacity: 0 !important;
+    transition: opacity ease 200ms;
+}
+
+.arco-scrollbar.arco-scrollbar-type-embed:hover > .arco-scrollbar-track > .arco-scrollbar-thumb,
+.arco-scrollbar.arco-scrollbar-type-embed > .arco-scrollbar-track > .arco-scrollbar-thumb-dragging {
+    opacity: 1 !important;
+}
+
+.arco-scrollbar.arco-scrollbar-type-embed:hover
+    .arco-scrollbar.arco-scrollbar-type-embed:not(:hover)
+    > .arco-scrollbar-track
+    > .arco-scrollbar-thumb:not(.arco-scrollbar-thumb-dragging) {
+    opacity: 0 !important;
+}
+
+.arco-scrollbar > .arco-scrollbar-track > .arco-scrollbar-thumb:hover > .arco-scrollbar-thumb-bar,
+.arco-scrollbar
+    > .arco-scrollbar-track
+    > .arco-scrollbar-thumb-dragging
+    > .arco-scrollbar-thumb-bar {
+    background: var(--color-neutral-7) content-box !important;
+}
+
+.arco-scrollbar
+    > .arco-scrollbar-track
+    > .arco-scrollbar-thumb-direction-horizontal
+    > .arco-scrollbar-thumb-bar {
+    height: 10px !important;
+    margin: 0 !important;
+}
+
+.arco-scrollbar
+    > .arco-scrollbar-track
+    > .arco-scrollbar-thumb-direction-vertical
+    > .arco-scrollbar-thumb-bar {
+    width: 10px !important;
+    margin: 0 !important;
+}
+
+.arco-scrollbar.arco-scrollbar-type-track.arco-scrollbar-both
+    > .arco-scrollbar-track-direction-vertical::after {
+    width: 10px !important;
+    height: 10px !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+
+pre,
+code,
+kbd,
+samp,
+tt,
+var,
+.monaco-editor,
+.monaco-editor .mtk,
+.monaco-editor .view-line,
+.monaco-editor .margin-view-overlays {
+    font-family: var(--font-code) !important;
+}
+
+@font-face {
+    font-family: "Source Han Sans";
+    src: url("../assets/font/SourceHanSansCN-VF.woff2") format("woff2");
+
+    font-weight: normal;
+    font-style: normal;
+}
+
+.arco-message {
+    /* border: none !important; */
+    background-color: var(--color-bg-opacity-2) !important;
+    backdrop-filter: blur(20px) !important;
+    user-select: none;
+}
+.arco-modal-mask,
+.arco-drawer-mask {
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+.arco-modal,
+.arco-drawer {
+    box-sizing: border-box;
+    max-width: 100vw;
+    max-height: 100vh;
+    border: 1px solid var(--color-bg-opacity-5) !important;
+    background-color: var(--color-bg-opacity-5) !important;
+    backdrop-filter: blur(40px) !important;
+    box-shadow: 0px 0px 50px 5px rgb(0, 0, 0, 0.15);
+}
+
+// 普通 Modal 超出视口时只滚动内容区，标题和底部操作按钮保留在弹窗内。
+.arco-modal-wrapper-align-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden !important;
+}
+
+.arco-modal-wrapper-align-center::after {
+    display: none !important;
+}
+
+.arco-modal:not(.arco-modal-simple):not(.arco-modal-fullscreen) {
+    display: flex !important;
+    flex-direction: column;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+}
+
+.arco-modal:not(.arco-modal-simple):not(.arco-modal-fullscreen) > .arco-modal-header,
+.arco-modal:not(.arco-modal-simple):not(.arco-modal-fullscreen) > .arco-modal-footer {
+    flex: 0 0 auto;
+}
+
+.arco-modal:not(.arco-modal-simple):not(.arco-modal-fullscreen) > .arco-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.arco-drawer-body {
+    min-width: 0;
+    overflow-x: auto;
+}
+.arco-select-dropdown,
+.arco-picker-range-container {
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+.arco-trigger-popup,
+.arco-trigger-popup-wrapper,
+.arco-trigger-content {
+    box-sizing: border-box;
+    max-width: calc(100vw - 16px);
+}
+.arco-trigger-popup-wrapper {
+    background-color: var(--color-bg-opacity-5) !important;
+    backdrop-filter: blur(40px) !important;
+    overflow-wrap: anywhere;
+}
+
+// Arco Card 头部使用最小高度，保留默认尺寸并允许内容撑开。
+.arco-card-size-medium .arco-card-header {
+    height: auto !important;
+    min-height: 46px;
+    color: var(--color-text-2);
+}
+
+.arco-card-size-small .arco-card-header {
+    height: auto !important;
+    min-height: 40px;
+    color: var(--color-text-2);
+}
+
+// 给 Arco 图标 hover 背景补上轻量缩放过渡，避免背景层突然出现。
+.arco-icon-hover::before,
+.arco-checkbox-icon-hover::before {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0) !important;
+    transform-origin: center !important;
+    transition:
+        background-color 0.24s cubic-bezier(0.34, 0.69, 0.1, 1),
+        opacity 0.24s cubic-bezier(0.34, 0.69, 0.1, 1),
+        transform 0.24s cubic-bezier(0.34, 0.69, 0.1, 1) !important;
+}
+
+.arco-icon-hover:not(.arco-icon-hover-disabled):hover::before,
+.arco-icon-hover:not(.arco-icon-hover-disabled):focus-visible::before,
+.arco-checkbox:hover .arco-checkbox-icon-hover::before,
+.arco-checkbox > input[type="checkbox"]:focus-visible + .arco-checkbox-icon-hover::before {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) !important;
+}
+
+.arco-icon-hover:not(.arco-icon-hover-disabled):active::before,
+.arco-checkbox:not(.arco-checkbox-disabled):active .arco-checkbox-icon-hover::before {
+    transform: translate(-50%, -50%) scale(0.92) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arco-icon-hover::before,
+    .arco-checkbox-icon-hover::before {
+        transition: background-color 0.1s cubic-bezier(0, 0, 1, 1) !important;
+    }
+}

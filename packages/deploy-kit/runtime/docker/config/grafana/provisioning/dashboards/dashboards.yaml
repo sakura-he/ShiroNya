@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: Shiro Nya
+    orgId: 1
+    folder: Shiro Nya
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

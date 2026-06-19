@@ -1,0 +1,6 @@
+packages:
+    - 'apps/admin-api'
+    - 'apps/app-api'
+    - 'apps/admin-web'
+    - 'packages/spicedb-toolkit/*'
+    - 'packages/deploy-kit'

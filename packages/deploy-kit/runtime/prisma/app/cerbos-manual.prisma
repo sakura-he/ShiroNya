@@ -1,0 +1,37 @@
+// Generic Cerbos hand-written policy storage.
+// These policies are not ABAC built-in policy groups and do not bind ABAC permission rows.
+
+enum CerbosManualPolicyStatus {
+  ENABLE
+  DISABLE
+}
+
+enum CerbosManualPolicyValidateStatus {
+  UNKNOWN
+  VALID
+  INVALID
+}
+
+model CerbosManualPolicy {
+  id              Int                               @id @default(autoincrement())
+  name            String                            @db.VarChar(191)
+  description     String?                           @db.Text
+  status          CerbosManualPolicyStatus          @default(ENABLE)
+  version         String                            @default("default") @db.VarChar(64)
+  content         Json
+  parsedContent   Json?                             @map("parsed_content")
+  actionCodes     Json                              @map("action_codes")
+  cerbosResource  String                            @map("cerbos_resource") @db.VarChar(191)
+  cerbosVersion   String                            @default("default") @map("cerbos_version") @db.VarChar(64)
+  validateStatus  CerbosManualPolicyValidateStatus  @default(UNKNOWN) @map("validate_status")
+  validateMessage String?                           @map("validate_message") @db.Text
+  createdBy       String?                           @map("created_by") @db.VarChar(191)
+  updatedBy       String?                           @map("updated_by") @db.VarChar(191)
+  createdAt       DateTime                          @default(now()) @map("created_at")
+  updatedAt       DateTime                          @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime?                         @map("deleted_at")
+
+  @@unique([cerbosResource, cerbosVersion])
+  @@index([status])
+  @@map("cerbos_manual_policy")
+}

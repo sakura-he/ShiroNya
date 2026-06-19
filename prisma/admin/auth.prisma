@@ -1,0 +1,87 @@
+model BetterAuthUser {
+  id                       String                        @id
+  name                     String
+  email                    String                        @unique
+  emailVerified            Boolean                       @default(false)
+  image                    String?
+  role                     String?                       @default("user")
+  banned                   Boolean?                      @default(false)
+  banReason                String?
+  banExpires               DateTime?
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+  phoneNumber              String?                       @unique
+  phoneNumberVerified      Boolean?
+  username                 String?                       @unique
+  displayUsername          String?
+  sessions                 BetterAuthSession[]
+  accounts                 BetterAuthAccount[]
+  profile                  BetterAuthUserProfile?
+  rbacUserRoles            RbacUserRole[]
+  rbacGroupMembers         RbacUserGroupMember[]
+  rbacEffectiveRoles       RbacEffectiveUserRole[]
+  rbacEffectivePermissions RbacEffectiveUserPermission[]
+  rbacVisibleMenus         RbacUserVisibleMenu[]
+  adminPreferences         AdminUserPreference[]
+
+  @@map("better_auth_user")
+}
+
+model BetterAuthUserProfile {
+  id          Int            @id @default(autoincrement())
+  userId      String         @unique @map("user_id")
+  remark      String?
+  createdBy   String?        @map("created_by")
+  lastLoginAt DateTime?      @map("last_login_at")
+  user        BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("better_auth_user_profile")
+}
+
+model BetterAuthSession {
+  id             String         @id
+  expiresAt      DateTime
+  token          String         @unique
+  impersonatedBy String?        @map("impersonated_by")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("better_auth_session")
+}
+
+model BetterAuthAccount {
+  id                    String         @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  user                  BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("better_auth_account")
+}
+
+model BetterAuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("better_auth_verification")
+}

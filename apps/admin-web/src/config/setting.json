@@ -1,0 +1,22 @@
+{
+	"theme": "light",
+	"colorWeak": false,
+	"navbar": true,
+	"menu": true,
+	"hideMenu": false,
+	"menuCollapse": false,
+	"footer": true,
+	"themeColor": "#165DFF",
+	"menuWidth": 220,
+	"globalSettings": false,
+	"device": 2,
+	"tabBar": true,
+	"menuFromServer": true,
+	"serverMenu": [],
+	"showTabsPinIcon": false,
+	"translucent": true,
+	"openingAnimation":"fade-in",
+	"quitAnimation":"fade-out-right",
+	"animationSync":false
+
+}

@@ -1,0 +1,44 @@
+/// Admin 后台界面偏好系统默认值与可编辑策略。
+model AdminPreferencePolicy {
+  /// 偏好键，例如 themeColor、tabBar。
+  key          String   @id @db.VarChar(191)
+  /// 系统默认值；当用户没有自定义值，或 userEditable=false 时生效。
+  value        Json
+  /// 是否允许用户在右侧设置抽屉中自行修改。
+  userEditable Boolean  @default(true) @map("user_editable")
+  /// 设置项展示名称，便于后台配置页渲染。
+  label        String   @db.VarChar(191)
+  /// 设置分组，例如 appearance、layout、animation、accessibility。
+  group        String   @db.VarChar(64)
+  /// 排序值，越小越靠前。
+  sort         Int      @default(0)
+  /// 创建时间。
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// 最后更新时间。
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([group, sort])
+  @@map("admin_preference_policy")
+}
+
+/// Admin 后台用户个人界面偏好。
+model AdminUserPreference {
+  /// 自增主键。
+  id        Int            @id @default(autoincrement())
+  /// 用户 ID。
+  userId    String         @map("user_id")
+  /// 偏好键，对应 AdminPreferencePolicy.key。
+  key       String         @db.VarChar(191)
+  /// 用户自定义值。
+  value     Json
+  /// 创建时间。
+  createdAt DateTime       @default(now()) @map("created_at")
+  /// 最后更新时间。
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
+  /// 关联后台用户；用户删除时清理个人偏好。
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([key])
+  @@map("admin_user_preference")
+}

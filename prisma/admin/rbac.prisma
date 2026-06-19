@@ -1,0 +1,447 @@
+// RBAC 设计目标：
+// 1. 源表负责保存后台 RBAC 主数据，便于 SQL 过滤、分页、统计和审计。
+// 2. 读模型表只作为性能出口，放在文件末尾，可按需启用 rebuild/增量维护。
+// 3. 运行时只按 permission code + effective grant 判断。
+
+// =========================
+// 枚举
+// =========================
+
+/// RBAC 通用启用状态。
+enum RbacStatus {
+  /// 启用；参与管理页查询、关系分配和有效权限重建。
+  ENABLE
+  /// 禁用；保留历史配置但不应参与新的授权计算。
+  DISABLE
+}
+
+/// RBAC 权限类型；只区分菜单入口和业务动作。
+enum RbacPermissionKind {
+  /// 菜单入口权限；通常用于点亮页面级导航节点。
+  MENU
+  /// 页面按钮、接口、数据范围或其他业务动作权限；普通 RBAC 的默认权限类型。
+  ACTION
+}
+
+// =========================
+// 源表：角色、用户组、权限
+// =========================
+
+/// RBAC 角色源表。
+/// 适合承载后台管理员、运营、审核员等稳定身份能力。
+model RbacRole {
+  /// 角色 ID。
+  id             Int                     @id @default(autoincrement())
+  /// 稳定角色编码，例如 super_admin、operator。
+  code           String                  @db.VarChar(191)
+  /// 展示名称。
+  name           String                  @db.VarChar(191)
+  /// 角色说明，描述角色适用人群、职责边界或授权原因。
+  description    String?                 @db.Text
+  /// 排序值，越小越靠前。
+  sort           Int                     @default(0)
+  /// 是否内置角色；内置角色通常禁止删除。
+  isBuiltin      Boolean                 @default(false) @map("is_builtin")
+  /// 是否超级管理员角色；运行时可直接短路全部 RBAC 权限。
+  isSuperAdmin   Boolean                 @default(false) @map("is_super_admin")
+  /// 启用状态；禁用后不应参与有效角色和有效权限重建。
+  status         RbacStatus              @default(ENABLE)
+  /// 创建人 ID 或系统标识，用于审计这条角色主数据的来源。
+  createdBy      String?                 @map("created_by") @db.VarChar(191)
+  /// 最后修改人 ID 或系统标识，用于审计角色配置变更。
+  updatedBy      String?                 @map("updated_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt      DateTime                @default(now()) @map("created_at")
+  /// 最后更新时间；由 Prisma 在更新时自动维护。
+  updatedAt      DateTime                @default(now()) @updatedAt @map("updated_at")
+  /// 软删除时间；非空表示角色已从管理视图中移除但历史关系仍可追溯。
+  deletedAt      DateTime?               @map("deleted_at")
+  /// 直接拥有该角色的用户关系集合。
+  userRoles      RbacUserRole[]
+  /// 绑定到该角色的用户组关系集合。
+  groupRoles     RbacUserGroupRole[]
+  /// 该角色直接授予的权限关系集合。
+  roleGrants     RbacRolePermission[]
+  /// 该角色作为子角色时的继承边集合；拥有本角色会继续继承 parentLinks 中的父角色。
+  childLinks     RbacRoleInherit[]       @relation("RbacRoleChild")
+  /// 该角色作为父角色时被哪些子角色继承的边集合。
+  parentLinks    RbacRoleInherit[]       @relation("RbacRoleParent")
+  /// 有效用户角色读模型中的反向引用；用于快速查询最终拥有该角色的用户。
+  effectiveUsers RbacEffectiveUserRole[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@index([isSuperAdmin, status])
+  @@map("rbac_role")
+}
+
+/// RBAC 用户组源表。
+/// 用户组只负责批量归集用户，再通过 UserGroupRole 继承角色。
+model RbacUserGroup {
+  /// 用户组 ID。
+  id          Int                   @id @default(autoincrement())
+  /// 稳定用户组编码。
+  code        String                @db.VarChar(191)
+  /// 展示名称。
+  name        String                @db.VarChar(191)
+  /// 用户组说明，描述分组规则、组织范围或批量授权目的。
+  description String?               @db.Text
+  /// 排序值，越小越靠前。
+  sort        Int                   @default(0)
+  /// 启用状态；禁用后用户组不应继续为成员提供角色。
+  status      RbacStatus            @default(ENABLE)
+  /// 创建人 ID 或系统标识，用于审计用户组来源。
+  createdBy   String?               @map("created_by") @db.VarChar(191)
+  /// 最后修改人 ID 或系统标识，用于审计用户组变更。
+  updatedBy   String?               @map("updated_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt   DateTime              @default(now()) @map("created_at")
+  /// 最后更新时间；由 Prisma 在更新时自动维护。
+  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at")
+  /// 软删除时间；非空表示用户组已从管理视图中移除。
+  deletedAt   DateTime?             @map("deleted_at")
+  /// 用户组成员关系集合，表达哪些用户属于该组。
+  members     RbacUserGroupMember[]
+  /// 用户组角色关系集合，表达该组成员可继承哪些角色。
+  roles       RbacUserGroupRole[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@map("rbac_user_group")
+}
+
+/// RBAC 权限分组源表。
+/// 分组只服务后台管理页面的归类展示和批量维护，不参与运行时授权。
+model RbacPermissionGroup {
+  /// 分组 ID。
+  id          Int              @id @default(autoincrement())
+  /// 稳定分组编码，例如 system.user、rbac.permission。
+  code        String           @db.VarChar(191)
+  /// 展示名称。
+  name        String           @db.VarChar(191)
+  /// 分组说明，描述该组覆盖的菜单、权限或业务模块。
+  description String?          @db.Text
+  /// 排序值，越小越靠前。
+  sort        Int              @default(0)
+  /// 启用状态；禁用后仍保留归属关系，但管理页可按状态过滤。
+  status      RbacStatus       @default(ENABLE)
+  /// 创建人 ID 或系统标识，用于审计分组来源。
+  createdBy   String?          @map("created_by") @db.VarChar(191)
+  /// 最后修改人 ID 或系统标识，用于审计分组变更。
+  updatedBy   String?          @map("updated_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt   DateTime         @default(now()) @map("created_at")
+  /// 最后更新时间；由 Prisma 在更新时自动维护。
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  /// 软删除时间；非空表示分组已从管理视图中移除。
+  deletedAt   DateTime?        @map("deleted_at")
+  /// 归属该分组的权限。一个权限最多只能归属一个分组。
+  permissions RbacPermission[]
+  /// 归属该分组的菜单。一个菜单最多只能归属一个分组。
+  menus       RbacMenu[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@map("rbac_permission_group")
+}
+
+/// RBAC 权限源表。
+/// code 是业务权限 token；用于后端守卫、前端按钮显示、菜单可见性声明和审计。
+model RbacPermission {
+  /// 权限 ID。
+  id                   Int                           @id @default(autoincrement())
+  /// 稳定权限编码，例如 system.user.create。
+  code                 String                        @db.VarChar(191)
+  /// 展示名称。
+  name                 String                        @db.VarChar(191)
+  /// 权限说明，描述该权限控制的菜单或业务动作。
+  description          String?                       @db.Text
+  /// 权限类型，只区分菜单入口和业务动作。
+  kind                 RbacPermissionKind            @default(ACTION)
+  /// 管理分组 ID；仅用于后台权限页面归类，不参与运行时授权。
+  groupId              Int?                          @map("group_id")
+  /// 排序值，越小越靠前。
+  sort                 Int                           @default(0)
+  /// 是否内置权限；内置权限通常由种子或系统同步维护，不建议随意删除。
+  isBuiltin            Boolean                       @default(false) @map("is_builtin")
+  /// 启用状态；禁用后不应被角色授予或编译为运行时规则。
+  status               RbacStatus                    @default(ENABLE)
+  /// 创建人 ID 或系统标识，用于审计权限来源。
+  createdBy            String?                       @map("created_by") @db.VarChar(191)
+  /// 最后修改人 ID 或系统标识，用于审计权限配置变更。
+  updatedBy            String?                       @map("updated_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt            DateTime                      @default(now()) @map("created_at")
+  /// 最后更新时间；由 Prisma 在更新时自动维护。
+  updatedAt            DateTime                      @default(now()) @updatedAt @map("updated_at")
+  /// 软删除时间；非空表示权限已从管理视图中移除。
+  deletedAt            DateTime?                     @map("deleted_at")
+  /// 角色权限关系集合，表达哪些角色直接授予了该权限。
+  roleGrants           RbacRolePermission[]
+  /// 有效用户权限读模型中的反向引用，用于快速查询最终拥有该权限的用户。
+  effectivePermissions RbacEffectiveUserPermission[]
+  /// 使用该权限作为可见性声明的菜单；菜单不授予权限，只引用 code。
+  requiredByMenu       RbacMenu?
+  /// 当前权限所属管理分组；分组删除时清空归属。
+  group                RbacPermissionGroup?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@unique([code])
+  @@index([kind, status, sort])
+  @@index([groupId, sort])
+  @@map("rbac_permission")
+}
+
+// =========================
+// 源表：菜单
+// =========================
+
+/// RBAC 菜单源表。
+/// 这张表是 admin 导航菜单权威来源；菜单只声明 requiredPermissionCode，不授予权限。
+model RbacMenu {
+  /// 菜单 ID。
+  id                     Int                   @id @default(autoincrement())
+  /// 父菜单 ID，仅指向 RBAC 自有菜单树。
+  pid                    Int?
+  /// 菜单说明，描述页面或按钮的业务用途。
+  description            String?               @db.VarChar(191)
+  /// 菜单标题；用于 RBAC 管理页和菜单树展示。
+  title                  String                @db.VarChar(191)
+  /// 前端组件路径；页面节点需要它来定位实际渲染组件。
+  componentPath          String?               @map("component_path") @db.VarChar(191)
+  /// 菜单节点类型；区分目录、页面和按钮等节点。
+  type                   MenuTypeEnum
+  /// 管理分组 ID；仅用于后台权限页面归类，不参与导航授权。
+  groupId                Int?                  @map("group_id")
+  /// 路由路径；目录和页面节点用于构造前端路由。
+  path                   String?               @db.VarChar(191)
+  /// 图标名称；只保存图标标识，前端负责映射为真实图标组件。
+  icon                   String?               @db.VarChar(191)
+  /// 排序值，越小越靠前；同级菜单按该字段排序。
+  order                  Int?
+  /// 布局类型；控制页面节点在前端使用侧边栏、顶部栏等布局形态。
+  layout                 MenuLayoutTypeEnum    @default(LAYOUT_SIDE)
+  /// 页面类型；控制页面节点是普通页面、外链或 iframe 等形态。
+  pageType               PageTypeEnum          @default(PAGE) @map("page_type")
+  /// 是否常驻标签页；为 true 时前端标签页通常不可关闭。
+  isResident             Boolean               @default(false) @map("is_resident")
+  /// 是否缓存页面组件；为 true 时前端可使用 keep-alive 保留页面状态。
+  isCache                Boolean               @default(false) @map("is_cache")
+  /// 是否在菜单中可见；不可见节点仍可作为路由或按钮权限存在。
+  isMenuVisible          Boolean               @default(true) @map("is_menu_visible")
+  /// 菜单启用状态；禁用后不应进入可见菜单读模型。
+  status                 MenuStatusEnum        @default(ENABLE)
+  /// 是否展示子菜单；用于控制父节点折叠展示和隐藏子级入口。
+  showChildren           Boolean               @default(true) @map("show_children")
+  /// 菜单可见所需的 RBAC 权限编码。
+  /// 菜单不授予权限，只声明进入当前目录、页面或按钮节点需要哪个权限。
+  requiredPermissionCode String                @map("required_permission_code") @db.VarChar(191)
+  /// 前端组件名称；配合缓存、标签页和 keep-alive 做稳定识别。
+  componentName          String?               @map("component_name") @db.VarChar(191)
+  /// 是否显示标签页；为 false 时进入页面但不加入标签页列表。
+  isTabVisible           Boolean               @default(true) @map("is_tab_visible")
+  /// 创建人 ID 或系统标识，用于审计菜单来源。
+  createdBy              String?               @map("created_by") @db.VarChar(191)
+  /// 最后修改人 ID 或系统标识，用于审计菜单变更。
+  updatedBy              String?               @map("updated_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt              DateTime              @default(now()) @map("created_at")
+  /// 最后更新时间；由 Prisma 在更新时自动维护。
+  updatedAt              DateTime              @default(now()) @updatedAt @map("updated_at")
+  /// 父菜单关系；父节点删除时仅清空 pid，避免级联删除整棵子树。
+  parent                 RbacMenu?             @relation("RbacMenuTree", fields: [pid], references: [id], onDelete: SetNull)
+  /// 子菜单关系集合；用于构造 RBAC 自有菜单树。
+  children               RbacMenu[]            @relation("RbacMenuTree")
+  /// 当前菜单声明依赖的权限；角色授予该权限后，用户才可能看到该菜单。
+  requiredPermission     RbacPermission        @relation(fields: [requiredPermissionCode], references: [code], onUpdate: Cascade, onDelete: Restrict)
+  /// 当前菜单所属管理分组；分组删除时清空归属。
+  group                  RbacPermissionGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  /// 用户可见菜单读模型中的反向引用；用于快速查询最终可见该菜单的用户。
+  visibleUsers           RbacUserVisibleMenu[]
+
+  @@unique([requiredPermissionCode])
+  @@index([pid, order])
+  @@index([status, order])
+  @@index([type, status])
+  @@index([groupId, order])
+  @@index([requiredPermissionCode, status])
+  @@map("rbac_menu")
+}
+
+// =========================
+// 配置关系表：继承、分配、授权
+// =========================
+
+/// RBAC 角色继承关系。
+/// role 继承 parentRole；重建有效角色时需要做环检测，避免继承链递归。
+model RbacRoleInherit {
+  /// 子角色 ID，拥有该角色时会继承 parentRole 的权限。
+  roleId       Int      @map("role_id")
+  /// 父角色 ID，被继承的基础角色。
+  parentRoleId Int      @map("parent_role_id")
+  /// 创建人 ID 或系统标识，用于审计继承关系来源。
+  createdBy    String?  @map("created_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// 子角色关系；删除子角色时级联删除这条继承边。
+  role         RbacRole @relation("RbacRoleChild", fields: [roleId], references: [id], onDelete: Cascade)
+  /// 父角色关系；删除父角色时级联删除这条继承边。
+  parentRole   RbacRole @relation("RbacRoleParent", fields: [parentRoleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, parentRoleId])
+  @@index([parentRoleId])
+  @@map("rbac_role_inherit")
+}
+
+/// RBAC 用户直接角色关系。
+/// 查询角色直接成员、用户直接角色时走这张源表。
+model RbacUserRole {
+  /// Better Auth 后台用户 ID。
+  userId    String         @map("user_id")
+  /// 直接分配的角色 ID。
+  roleId    Int            @map("role_id")
+  /// 创建人 ID 或系统标识，用于审计用户角色分配来源。
+  createdBy String?        @map("created_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt DateTime       @default(now()) @map("created_at")
+  /// 用户关系；删除用户时级联删除直接角色分配。
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 角色关系；删除角色时级联删除直接角色分配。
+  role      RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId, userId])
+  @@map("rbac_user_role")
+}
+
+/// RBAC 用户组成员关系。
+/// 只表达 user 属于 group；是否获得权限取决于 group 绑定了哪些角色。
+model RbacUserGroupMember {
+  /// Better Auth 后台用户 ID。
+  userId    String         @map("user_id")
+  /// 用户组 ID。
+  groupId   Int            @map("group_id")
+  /// 创建人 ID 或系统标识，用于审计用户入组来源。
+  createdBy String?        @map("created_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt DateTime       @default(now()) @map("created_at")
+  /// 用户关系；删除用户时级联删除入组关系。
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 用户组关系；删除用户组时级联删除成员关系。
+  group     RbacUserGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([groupId, userId])
+  @@map("rbac_user_group_member")
+}
+
+/// RBAC 用户组角色关系。
+/// 用户通过 group -> role 获得角色能力，重建读模型时展开到 effective role。
+model RbacUserGroupRole {
+  /// 用户组 ID。
+  groupId   Int           @map("group_id")
+  /// 用户组继承的角色 ID。
+  roleId    Int           @map("role_id")
+  /// 创建人 ID 或系统标识，用于审计用户组角色绑定来源。
+  createdBy String?       @map("created_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt DateTime      @default(now()) @map("created_at")
+  /// 用户组关系；删除用户组时级联删除角色绑定。
+  group     RbacUserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  /// 角色关系；删除角色时级联删除用户组角色绑定。
+  role      RbacRole      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, roleId])
+  @@index([roleId, groupId])
+  @@map("rbac_user_group_role")
+}
+
+/// RBAC 角色权限关系。
+/// 只表达允许授权；用户最终权限由 effective_user_permission 展开。
+model RbacRolePermission {
+  /// 角色 ID。
+  roleId       Int            @map("role_id")
+  /// 权限 ID。
+  permissionId Int            @map("permission_id")
+  /// 创建人 ID 或系统标识，用于审计角色授权来源。
+  createdBy    String?        @map("created_by") @db.VarChar(191)
+  /// 创建时间。
+  createdAt    DateTime       @default(now()) @map("created_at")
+  /// 角色关系；删除角色时级联删除该角色的授权。
+  role         RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// 权限关系；删除权限时级联删除对应授权。
+  permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("rbac_role_permission")
+}
+
+// =========================
+// 读模型：放在最后，按需启用
+// =========================
+
+/// RBAC 用户有效角色读模型。
+/// 用于快速查询“角色有哪些有效成员”“用户直接或通过用户组最终持有哪些角色”；角色继承只展开权限，不把父角色写入这里。
+model RbacEffectiveUserRole {
+  /// Better Auth 后台用户 ID。
+  userId    String         @map("user_id")
+  /// 有效角色 ID，只包含直接角色和用户组角色；不包含角色继承链上的父角色。
+  roleId    Int            @map("role_id")
+  /// 快照版本，用于和 user-state / rebuild 任务对齐。
+  version   String?        @db.VarChar(128)
+  /// 读模型更新时间；重建或增量刷新时更新，用于判断快照新鲜度。
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
+  /// 用户关系；删除用户时级联清理有效角色快照。
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 角色关系；删除角色时级联清理有效角色快照。
+  role      RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId, userId])
+  @@index([version])
+  @@map("rbac_effective_user_role")
+}
+
+/// RBAC 用户有效权限读模型。
+/// 运行时直接按 userId 拉取 permission code set，不在热路径重算角色和用户组关系。
+model RbacEffectiveUserPermission {
+  /// Better Auth 后台用户 ID。
+  userId       String         @map("user_id")
+  /// 有效权限 ID，已展开直接角色、用户组角色和角色继承后的角色授权。
+  permissionId Int            @map("permission_id")
+  /// 快照版本，用于和 user-state / rebuild 任务对齐。
+  version      String?        @db.VarChar(128)
+  /// 读模型更新时间；重建或增量刷新时更新，用于判断快照新鲜度。
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at")
+  /// 用户关系；删除用户时级联清理有效权限快照。
+  user         BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 权限关系；删除权限时级联清理有效权限快照。
+  permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@index([permissionId])
+  @@index([version])
+  @@map("rbac_effective_user_permission")
+}
+
+/// RBAC 用户可见菜单读模型。
+/// 只服务导航和菜单过滤性能；权限事实来自 role/group/permission 源表，菜单只声明 requiredPermissionCode。
+model RbacUserVisibleMenu {
+  /// Better Auth 后台用户 ID。
+  userId    String         @map("user_id")
+  /// 可见菜单 ID。
+  menuId    Int            @map("menu_id")
+  /// 快照版本，用于和 user-state / rebuild 任务对齐。
+  version   String?        @db.VarChar(128)
+  /// 读模型更新时间；重建或增量刷新时更新，用于判断快照新鲜度。
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
+  /// 用户关系；删除用户时级联清理可见菜单快照。
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 菜单关系；删除菜单时级联清理可见菜单快照。
+  menu      RbacMenu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@id([userId, menuId])
+  @@index([menuId, userId])
+  @@index([version])
+  @@map("rbac_user_visible_menu")
+}

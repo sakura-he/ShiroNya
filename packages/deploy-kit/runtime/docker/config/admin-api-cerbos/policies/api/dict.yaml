@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 字典接口策略
+# 数据库菜单中无 admin_dict 对应页面，按保守策略仅 super_admin 可访问
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_dict
+  version: default
+  rules:
+    - actions: ["list", "create", "update", "delete"]
+      roles: ["super_admin"]
+      effect: EFFECT_ALLOW

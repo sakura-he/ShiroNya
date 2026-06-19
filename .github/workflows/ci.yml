@@ -1,0 +1,55 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches:
+            - main
+            - master
+
+jobs:
+    validate-build-test:
+        name: Validate, Build, Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: AuthZed schema validate
+              uses: authzed/action-spicedb-validate@v1
+              with:
+                  validationfile: spicedb/schema.zed
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Generate Prisma clients
+              env:
+                  ADMIN_DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma
+                  APP_DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma
+              run: pnpm prisma:generate
+
+            - name: Validate SpiceDB schema
+              run: pnpm spicedb:admin:schema:validate
+
+            - name: Run backend tests
+              run: pnpm test
+
+            - name: Build admin-api
+              run: pnpm build:admin-api
+
+            - name: Build app-api
+              run: pnpm build:app-api
+
+            - name: Build admin web
+              run: pnpm build:admin-web

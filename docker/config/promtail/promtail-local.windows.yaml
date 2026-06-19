@@ -1,0 +1,52 @@
+server:
+  http_listen_port: ${PROMTAIL_HTTP_PORT}
+
+positions:
+  filename: ${SHIRO_NYA_ROOT}/logs/promtail-local-positions.yaml
+
+clients:
+  - url: ${REMOTE_LOKI_URL}
+    tls_config:
+      ca_file: ${LOKI_TLS_CA_PATH}
+      cert_file: ${LOKI_TLS_CLIENT_CERT_PATH}
+      key_file: ${LOKI_TLS_CLIENT_KEY_PATH}
+      server_name: ${LOKI_TLS_SERVER_NAME}
+
+scrape_configs:
+  - job_name: shiro-nya-local-runtime-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: shiro-nya-local-runtime-logs
+          source: local-dev
+          __path__: ${SHIRO_NYA_ROOT}/logs/loki/*/system-${PROMTAIL_LOG_DATE}.log
+      - targets:
+          - localhost
+        labels:
+          job: shiro-nya-local-runtime-logs
+          source: local-dev
+          __path__: ${SHIRO_NYA_ROOT}/logs/loki/*/user_action-${PROMTAIL_LOG_DATE}.log
+    pipeline_stages:
+      - json:
+          expressions:
+            ts: ts
+            app: labels.app
+            env: labels.env
+            log_type: labels.log_type
+            level: labels.level
+            module: labels.module
+      - timestamp:
+          source: ts
+          format: RFC3339
+      - drop:
+          older_than: ${PROMTAIL_DROP_OLDER_THAN}
+          drop_counter_reason: local_backfill_too_old
+      - labels:
+          app:
+          env:
+          log_type:
+          level:
+          module:
+      - labeldrop:
+          - filename

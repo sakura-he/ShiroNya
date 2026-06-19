@@ -1,0 +1,1 @@
+export const USER_ADMIN_GRPC_CLIENT = Symbol('USER_ADMIN_GRPC_CLIENT');

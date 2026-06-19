@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api App 菜单管理接口策略
+# 数据库语义：system.app.menu.index 仅分配给 super_admin，因此 admin_app_menu 仅 super_admin 可访问
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_app_menu
+  version: default
+  rules:
+    - actions: ["tree", "list", "detail", "create", "update", "delete"]
+      roles: ["super_admin"]
+      effect: EFFECT_ALLOW

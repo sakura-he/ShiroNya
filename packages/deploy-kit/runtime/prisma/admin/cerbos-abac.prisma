@@ -1,0 +1,268 @@
+// Cerbos ABAC control-plane tables for admin-api.
+// These tables are independent from RBAC source tables. RBAC permission rows may be snapshotted,
+// but ABAC bindings are not written back to RBAC.
+
+enum CerbosAbacStatus {
+  ENABLE
+  DISABLE
+}
+
+enum CerbosAbacPermissionSource {
+  RBAC_SELECTED
+  MANUAL_INPUT
+}
+
+enum CerbosAbacBindType {
+  UNBOUND
+  BUILTIN
+}
+
+enum CerbosAbacEffect {
+  ALLOW
+  DENY
+}
+
+enum CerbosAbacMatchType {
+  ALL
+  ANY
+  NONE
+}
+
+enum CerbosAbacConditionNodeType {
+  GROUP
+  EXPR
+}
+
+enum CerbosAbacValueType {
+  PRINCIPAL_ATTR
+  RESOURCE_ATTR
+  REQUEST_CONTEXT
+  CONST
+  RAW_EXPR
+}
+
+enum CerbosAbacOperator {
+  EQ
+  NE
+  GT
+  GTE
+  LT
+  LTE
+  IN
+  NOT_IN
+  CONTAINS
+  NOT_CONTAINS
+  EMPTY
+  NOT_EMPTY
+}
+
+enum CerbosAbacValidateStatus {
+  UNKNOWN
+  VALID
+  INVALID
+}
+
+enum CerbosAbacFieldCategory {
+  USER_BASE
+  USER_EXTENSION
+  RESOURCE
+  REQUEST_CONTEXT
+}
+
+enum CerbosAbacFieldSource {
+  SESSION_DISCOVERED
+  CUSTOM
+  SYSTEM_BUILTIN
+}
+
+enum CerbosAbacFieldDataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  ARRAY
+  OBJECT
+  DATE
+}
+
+enum CerbosAbacSnapshotSourceType {
+  BUILTIN_MAIN
+}
+
+enum CerbosAbacReleaseStatus {
+  PENDING
+  ACTIVE
+  SUPERSEDED
+  FAILED
+  ROLLED_BACK
+}
+
+model CerbosAbacPermission {
+  id                     String                            @id @db.VarChar(64)
+  code                   String                            @db.VarChar(191)
+  name                   String                            @db.VarChar(191)
+  description            String?                           @db.Text
+  source                 CerbosAbacPermissionSource
+  rbacPermissionId       Int?                              @map("rbac_permission_id")
+  rbacPermissionCodeSnap String?                           @map("rbac_permission_code_snap") @db.VarChar(191)
+  rbacPermissionNameSnap String?                           @map("rbac_permission_name_snap") @db.VarChar(191)
+  bindType               CerbosAbacBindType                @default(UNBOUND) @map("bind_type")
+  status                 CerbosAbacStatus                  @default(ENABLE)
+  createdBy              String?                           @map("created_by") @db.VarChar(191)
+  updatedBy              String?                           @map("updated_by") @db.VarChar(191)
+  createdAt              DateTime                          @default(now()) @map("created_at")
+  updatedAt              DateTime                          @default(now()) @updatedAt @map("updated_at")
+  deletedAt              DateTime?                         @map("deleted_at")
+  policyGroups           CerbosAbacPolicyGroupPermission[]
+
+  @@unique([code])
+  @@index([source, status])
+  @@index([bindType, status])
+  @@map("cerbos_abac_permission")
+}
+
+model CerbosAbacPolicyGroup {
+  id          String                            @id @db.VarChar(64)
+  name        String                            @db.VarChar(191)
+  description String?                           @db.Text
+  effect      CerbosAbacEffect                  @default(ALLOW)
+  matchType   CerbosAbacMatchType               @default(ALL) @map("match_type")
+  status      CerbosAbacStatus                  @default(ENABLE)
+  version     String                            @default("default") @db.VarChar(64)
+  createdBy   String?                           @map("created_by") @db.VarChar(191)
+  updatedBy   String?                           @map("updated_by") @db.VarChar(191)
+  createdAt   DateTime                          @default(now()) @map("created_at")
+  updatedAt   DateTime                          @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime?                         @map("deleted_at")
+  permissions CerbosAbacPolicyGroupPermission[]
+  conditions  CerbosAbacConditionNode[]
+
+  @@index([status])
+  @@map("cerbos_abac_policy_group")
+}
+
+model CerbosAbacPolicyGroupPermission {
+  groupId      String                @map("group_id") @db.VarChar(64)
+  permissionId String                @map("permission_id") @db.VarChar(64)
+  createdBy    String?               @map("created_by") @db.VarChar(191)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  group        CerbosAbacPolicyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission   CerbosAbacPermission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, permissionId])
+  @@index([permissionId])
+  @@map("cerbos_abac_policy_group_permission")
+}
+
+model CerbosAbacConditionNode {
+  id         String                      @id @db.VarChar(64)
+  groupId    String                      @map("group_id") @db.VarChar(64)
+  parentId   String?                     @map("parent_id") @db.VarChar(64)
+  nodeType   CerbosAbacConditionNodeType @map("node_type")
+  matchType  CerbosAbacMatchType?        @map("match_type")
+  leftType   CerbosAbacValueType?        @map("left_type")
+  leftPath   String?                     @map("left_path") @db.VarChar(191)
+  operator   CerbosAbacOperator?
+  rightType  CerbosAbacValueType?        @map("right_type")
+  rightPath  String?                     @map("right_path") @db.VarChar(191)
+  rightValue Json?                       @map("right_value")
+  rawExpr    String?                     @map("raw_expr") @db.Text
+  sort       Int                         @default(0)
+  createdAt  DateTime                    @default(now()) @map("created_at")
+  updatedAt  DateTime                    @default(now()) @updatedAt @map("updated_at")
+  group      CerbosAbacPolicyGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  parent     CerbosAbacConditionNode?    @relation("CerbosAbacConditionTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   CerbosAbacConditionNode[]   @relation("CerbosAbacConditionTree")
+
+  @@index([groupId, parentId, sort])
+  @@map("cerbos_abac_condition_node")
+}
+
+model CerbosAbacField {
+  id           String                  @id @db.VarChar(64)
+  category     CerbosAbacFieldCategory
+  source       CerbosAbacFieldSource
+  key          String                  @db.VarChar(191)
+  label        String                  @db.VarChar(191)
+  description  String?                 @db.Text
+  valueType    CerbosAbacValueType     @map("value_type")
+  dataType     CerbosAbacFieldDataType @map("data_type")
+  operators    Json
+  status       CerbosAbacStatus        @default(ENABLE)
+  builtin      Boolean                 @default(false)
+  locked       Boolean                 @default(false)
+  discoveredAt DateTime?               @map("discovered_at")
+  lastSeenAt   DateTime?               @map("last_seen_at")
+  createdBy    String?                 @map("created_by") @db.VarChar(191)
+  updatedBy    String?                 @map("updated_by") @db.VarChar(191)
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime?               @map("deleted_at")
+
+  @@unique([valueType, key])
+  @@index([category, status])
+  @@index([source, status])
+  @@map("cerbos_abac_field")
+}
+
+model CerbosAbacPolicySnapshot {
+  id             String                            @id @db.VarChar(64)
+  sourceType     CerbosAbacSnapshotSourceType      @map("source_type")
+  sourceId       String?                           @map("source_id") @db.VarChar(64)
+  cerbosPolicyId String                            @map("cerbos_policy_id") @db.VarChar(191)
+  resourceName   String                            @map("resource_name") @db.VarChar(191)
+  cerbosVersion  String                            @map("cerbos_version") @db.VarChar(64)
+  policyContent  Json                              @map("policy_content")
+  contentHash    String                            @map("content_hash") @db.VarChar(64)
+  generatedBy    String?                           @map("generated_by") @db.VarChar(191)
+  generatedAt    DateTime                          @default(now()) @map("generated_at")
+  releases       CerbosAbacPolicyReleaseSnapshot[]
+
+  @@index([sourceType, sourceId])
+  @@index([contentHash])
+  @@map("cerbos_abac_policy_snapshot")
+}
+
+model CerbosAbacPolicyRelease {
+  id             String                            @id @db.VarChar(64)
+  revision       String                            @db.VarChar(64)
+  bundleHash     String                            @map("bundle_hash") @db.VarChar(64)
+  policyCount    Int                               @default(0) @map("policy_count")
+  manifestJson   Json                              @map("manifest_json")
+  status         CerbosAbacReleaseStatus           @default(PENDING)
+  reason         String?                           @db.Text
+  publishedBy    String?                           @map("published_by") @db.VarChar(191)
+  createdAt      DateTime                          @default(now()) @map("created_at")
+  publishedAt    DateTime?                         @map("published_at")
+  rollbackFromId String?                           @map("rollback_from_id") @db.VarChar(64)
+  errorMessage   String?                           @map("error_message") @db.Text
+  snapshots      CerbosAbacPolicyReleaseSnapshot[]
+
+  @@unique([revision])
+  @@index([status, publishedAt])
+  @@index([bundleHash])
+  @@map("cerbos_abac_policy_release")
+}
+
+model CerbosAbacPolicyReleaseSnapshot {
+  releaseId  String                   @map("release_id") @db.VarChar(64)
+  snapshotId String                   @map("snapshot_id") @db.VarChar(64)
+  release    CerbosAbacPolicyRelease  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  snapshot   CerbosAbacPolicySnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@id([releaseId, snapshotId])
+  @@index([snapshotId])
+  @@map("cerbos_abac_policy_release_snapshot")
+}
+
+model CerbosAbacAuditLog {
+  id          String   @id @db.VarChar(64)
+  actorId     String?  @map("actor_id") @db.VarChar(191)
+  action      String   @db.VarChar(191)
+  resourceKey String?  @map("resource_key") @db.VarChar(191)
+  detailJson  Json     @map("detail_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("cerbos_abac_audit_log")
+}

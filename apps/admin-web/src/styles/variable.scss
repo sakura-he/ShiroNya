@@ -1,0 +1,83 @@
+@use "common";
+
+// css 变量
+@use "sass:map";
+
+body {
+    --color-bg-opacity-1: rgba(255, 255, 255, 1);
+    --color-bg-opacity-2: rgba(255, 255, 255, 1);
+    --color-bg-opacity-3: rgba(255, 255, 255, 1);
+    --color-bg-opacity-4: rgba(255, 255, 255, 1);
+    --color-bg-opacity-5: rgba(255, 255, 255, 1);
+    // v-loading 指令的遮罩
+    --na-mask-color: rgba(255, 255, 255, 0.7);
+    --color-bg-main:#fafafa;
+    &[arco-theme="dark"] {
+        --na-mask-color: rgba(23, 23, 26, 0.7);
+        --color-bg-opacity-1: rgb(23, 23, 26);
+        --color-bg-opacity-2: rgba(23, 23, 26, 1);
+        --color-bg-opacity-3: rgba(23, 23, 26, 1);
+        --color-bg-opacity-4: rgba(23, 23, 26, 1);
+        --color-bg-opacity-5: rgba(23, 23, 26, 1);
+        --color-bg-main:rgba(25, 25, 26,1);
+    }
+}
+
+// 透明背景变量
+body:not([not-translucent]) {
+    --color-bg-opacity-1: rgba(255, 255, 255, 0.9);
+    --color-bg-opacity-2: rgba(255, 255, 255, 0.8);
+    --color-bg-opacity-3: rgba(255, 255, 255, 0.7);
+    --color-bg-opacity-4: rgba(255, 255, 255, 0.6);
+    --color-bg-opacity-5: rgba(255, 255, 255, 0.5);
+    --color-bg-opacity-6: rgba(255, 255, 255, 0.4);
+
+    &[arco-theme="dark"] {
+        --color-bg-opacity-1: rgba(23, 23, 26, 0.9);
+        --color-bg-opacity-2: rgba(23, 23, 26, 0.8);
+        --color-bg-opacity-3: rgba(23, 23, 26, 0.7);
+        --color-bg-opacity-4: rgba(23, 23, 26, 0.6);
+        --color-bg-opacity-5: rgba(23, 23, 26, 0.5);
+        --color-bg-opacity-6: rgba(255, 255, 255, 0.4);
+    }
+}
+
+// 字体变量
+body {
+    --font-size-body-3: 14px;
+    --font-size-body-2: 13px;
+    --font-size-body-1: 12px;
+    --font-size-caption: 12px;
+    --font-size-title-1: 16px;
+    --font-size-title-2: 18px;
+    --font-size-title-3: 22px;
+    --font-size-display-1: 30px;
+    --font-size-display-2: 42px;
+    --font-size-display-3: 48px;
+    --font-weight-400: 400;
+    --font-weight-500: 500;
+    --font-weight-600: 600;
+    --font-weight-700: 700;
+    --font-weight-800: 800;
+    --font-weight-900: 900;
+    --font-weight-300: 300;
+    --font-weight-200: 200;
+    --font-weight-100: 100;
+}
+
+// 全局间距变量
+body {
+    @for $i from 0 through 50 {
+        --size-#{$i}: #{$i * 4px};
+    }
+}
+
+body {
+    --page-pd-x: var(--size-2);
+    --page-pd-y: var(--size-2);
+
+    @media (width < #{map.get(common.$screen-size,'sm')}) {
+        --page-pd-x: var(--size-1);
+        --page-pd-y: var(--size-1);
+    }
+}

@@ -1,0 +1,78 @@
+// Enums that were previously shared implicitly through the single combined Prisma schema.
+
+enum TaskStrategy {
+  /// 自动执行
+  AUTO
+  ///
+  ONCE_AUTO
+  /// 手动执行
+  MANUAL
+}
+
+
+enum TaskStatus {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}
+
+
+enum TaskLogStatus {
+  /// 成功
+  SUCCESS
+  /// 失败
+  FAILED
+}
+
+
+enum AuditLogResult {
+  /// 成功
+  SUCCESS
+  /// 失败
+  FAILURE
+  /// 拒绝
+  DENY
+}
+
+
+enum FileMergeStatus {
+  /// 合并中
+  MERGE_ING
+  /// 合并成功
+  MERGE_SUCCESS
+  /// 合并失败
+  MERGE_FAILED
+}
+
+
+enum MenuStatusEnum {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}
+
+
+enum PageTypeEnum {
+  /// 页面
+  PAGE
+  /// 链接
+  LINK
+  /// iframe
+  IFRAME
+}
+
+
+enum MenuTypeEnum {
+  Catalog
+  Page
+  Button
+}
+
+
+enum MenuLayoutTypeEnum {
+  LAYOUT_DEFAULT
+  LAYOUT_SIDE
+  LAYOUT_TOP
+}

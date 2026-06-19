@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            http-equiv="X-UA-Compatible"
+            content="IE=edge"
+        />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        />
+        <title>Document</title>
+        <script src="https://unpkg.com/axios@0.24.0/dist/axios.min.js"></script>
+        <script src="https://unpkg.com/spark-md5@3.0.2/spark-md5.min.js"></script>
+    </head>
+    <body>
+        <input
+            id="fileInput"
+            type="file"
+        />
+        <script>
+            const fileInput = document.querySelector('#fileInput');
+
+            const chunkSize = 20 * 1024; //  (20k)
+
+            fileInput.onchange = async function () {
+                const file = fileInput.files[0];
+
+                console.log(file);
+
+                const chunks = [];
+                let startPos = 0;
+                let chunkIndex = 0;
+                // 切片
+                while (startPos < file.size) {
+                    let fileChunk = {
+                        index: chunkIndex++,
+                        chunk: undefined,
+                        chunkHash: undefined
+                    };
+                    fileChunk.chunk = file.slice(startPos, startPos + chunkSize).readAsArrayBuffer();
+                    console.log(fileChunk.chunk);
+                    fileChunk.chunkHash = SparkMD5.hash(fileChunk.chunk);
+                    chunks.push(fileChunk);
+                    startPos += chunkSize;
+                }
+
+                chunks.forEach((chunk, index) => {
+                    const data = new FormData();
+                    data.set('name', file.name);
+                    data.set('chunkIndex', chunk.index);
+                    data.set('chunkHash', chunk.chunkHash);
+                    data.append('chunk', chunk.chunk);
+                    return axios.post('http://localhost:3000/upload', data);
+                });
+                Promise.all(promises).then((res) => {
+                    return axios.post('http://localhost:3000/upload-chunk-done', {
+                        name: file.name,
+                        totleSize: file.size,
+                        totleLength: chunks.length
+                    });
+                });
+            };
+        </script>
+    </body>
+</html>

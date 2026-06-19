@@ -1,0 +1,586 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "title": "服务总览",
+      "type": "link",
+      "icon": "home",
+      "url": "/d/shiro-nya-overview",
+      "tooltip": "返回 Shiro Nya 服务总览",
+      "targetBlank": false
+    },
+    {
+      "title": "App API 日志",
+      "type": "link",
+      "icon": "apps",
+      "url": "/d/app-api-logs",
+      "tooltip": "App API 日志中心",
+      "targetBlank": false
+    },
+    {
+      "title": "Admin API 日志",
+      "type": "link",
+      "icon": "cog",
+      "url": "/d/admin-api-logs",
+      "tooltip": "Admin API 日志中心",
+      "targetBlank": false
+    },
+    {
+      "title": "Admin API 请求排查",
+      "type": "link",
+      "icon": "search",
+      "url": "/d/admin-api-request-drilldown",
+      "tooltip": "按用户、request_id、接口路径排查请求",
+      "targetBlank": false
+    },
+    {
+      "title": "Tempo 链路追踪",
+      "type": "link",
+      "icon": "compass",
+      "url": "/d/shiro-nya-tempo-traces",
+      "tooltip": "Shiro Nya Tempo 链路追踪",
+      "targetBlank": false
+    },
+    {
+      "title": "Explore: App API 全量",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bapp%3D%5C%22app-api%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: app=app-api",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore: App API 错误",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bapp%3D%5C%22app-api%5C%22%2C%20level%3D%5C%22error%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: app-api errors",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore: App API 用户操作",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bapp%3D%5C%22app-api%5C%22%2C%20log_type%3D%5C%22user_action%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: app-api user actions",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore: Admin API 全量",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bapp%3D%5C%22admin-api%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: app=admin-api",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore: Admin API 错误",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bapp%3D%5C%22admin-api%5C%22%2C%20level%3D%5C%22error%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: admin-api errors",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore: 全局错误",
+      "type": "link",
+      "icon": "compass",
+      "url": "/explore?schemaVersion=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D~%5C%22shiro-nya.*%5C%22%2C%20level%3D%5C%22error%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-6h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "tooltip": "Explore: all errors across projects",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "怎么用",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "### 独立查询中心\n\n- 这里集中放原来散在总览页顶部的常用 Loki 查询入口。\n- 顶部变量可按 `应用` / `级别` / `日志类型` / `模块` / `关键词正则` 缩小范围。\n- 如果要按用户、Request ID、接口路径排查一次请求，优先跳转到 `Admin API 请求排查`。"
+      },
+      "id": 1
+    },
+    {
+      "type": "row",
+      "title": "🔎 通用查询",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 2
+    },
+    {
+      "type": "logs",
+      "title": "按变量筛选日志",
+      "description": "通用 Loki 查询：按顶部变量筛选，并支持关键词正则。",
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=~\"shiro-nya.*\", app=~\"$app\", level=~\"$level\", log_type=~\"$log_type\", module=~\"$module\"} |~ \"$keyword_regex\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 3
+    },
+    {
+      "type": "logs",
+      "title": "全局错误 / Fatal",
+      "description": "跨 Shiro Nya 服务查看 error/fatal 日志。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=~\"shiro-nya.*\", level=~\"error|fatal\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 4
+    },
+    {
+      "type": "logs",
+      "title": "最近用户操作",
+      "description": "跨应用查看 user_action 日志。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{job=~\"shiro-nya.*\", log_type=\"user_action\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 5
+    },
+    {
+      "type": "row",
+      "title": "📱 App API",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 6
+    },
+    {
+      "type": "logs",
+      "title": "App API 全量",
+      "description": "App API 所有日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"app-api\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 7
+    },
+    {
+      "type": "logs",
+      "title": "App API 错误",
+      "description": "App API error 日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 8,
+        "y": 27
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"app-api\", level=\"error\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 8
+    },
+    {
+      "type": "logs",
+      "title": "App API 用户操作",
+      "description": "App API user_action 日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 16,
+        "y": 27
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"app-api\", log_type=\"user_action\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 9
+    },
+    {
+      "type": "row",
+      "title": "🛠️ Admin API",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 10
+    },
+    {
+      "type": "logs",
+      "title": "Admin API 全量",
+      "description": "Admin API 所有日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 0,
+        "y": 39
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"admin-api\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 11
+    },
+    {
+      "type": "logs",
+      "title": "Admin API 错误",
+      "description": "Admin API error 日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 8,
+        "y": 39
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"admin-api\", level=\"error\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 12
+    },
+    {
+      "type": "logs",
+      "title": "Admin API 用户操作",
+      "description": "Admin API user_action 日志。",
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 16,
+        "y": 39
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"admin-api\", log_type=\"user_action\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      },
+      "id": 13
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "shiro-nya",
+    "loki",
+    "query"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "multi": true,
+        "name": "app",
+        "label": "应用",
+        "query": {
+          "label": "app",
+          "stream": "{job=~\"shiro-nya.*\"}",
+          "type": 1
+        },
+        "refresh": 2,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "multi": true,
+        "name": "level",
+        "label": "级别",
+        "query": {
+          "label": "level",
+          "stream": "{job=~\"shiro-nya.*\", app=~\"$app\"}",
+          "type": 1
+        },
+        "refresh": 2,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "multi": true,
+        "name": "log_type",
+        "label": "日志类型",
+        "query": {
+          "label": "log_type",
+          "stream": "{job=~\"shiro-nya.*\", app=~\"$app\"}",
+          "type": 1
+        },
+        "refresh": 2,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "multi": true,
+        "name": "module",
+        "label": "模块",
+        "query": {
+          "label": "module",
+          "stream": "{job=~\"shiro-nya.*\", app=~\"$app\"}",
+          "type": 1
+        },
+        "refresh": 2,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "name": "keyword_regex",
+        "label": "关键词正则",
+        "description": "LogQL |~ 过滤，默认 .* 表示不过滤。",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": ".*",
+            "value": ".*"
+          }
+        ],
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Asia/Shanghai",
+  "title": "Shiro Nya 查询中心",
+  "uid": "shiro-nya-query-center",
+  "version": 1,
+  "weekStart": ""
+}

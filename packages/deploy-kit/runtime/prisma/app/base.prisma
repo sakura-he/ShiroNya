@@ -1,0 +1,6 @@
+// 部署脚本只需要 datasource 和模型定义来同步数据库结构。
+// 不声明 generator，避免部署时生成或改写业务工程代码。
+
+datasource db {
+  provider = "postgresql"
+}

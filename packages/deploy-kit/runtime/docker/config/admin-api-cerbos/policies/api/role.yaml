@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 后台角色管理接口策略
+# 数据库语义：拥有 system.role.index 页面权限的角色，可访问 admin_role 资源整组接口
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_role
+  version: default
+  rules:
+    - actions: ["get_all_roles", "create_role", "update_role", "delete_role", "get_role_menus"]
+      roles: ["super_admin", "test"]
+      effect: EFFECT_ALLOW

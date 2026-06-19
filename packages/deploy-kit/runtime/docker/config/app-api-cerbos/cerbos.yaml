@@ -1,0 +1,22 @@
+server:
+  httpListenAddr: "0.0.0.0:3592"
+  grpcListenAddr: "0.0.0.0:3593"
+  adminAPI:
+    enabled: true
+
+storage:
+  driver: sqlite3
+  sqlite3:
+    dsn: "/data/cerbos.db"
+
+audit:
+  enabled: true
+  accessLogsEnabled: true
+  decisionLogsEnabled: true
+  backend: file
+  file:
+    path: /audit_logs_json/audit.log
+    logRotation:
+      maxFileAgeDays: 7
+      maxFileCount: 10
+      maxFileSizeMB: 50

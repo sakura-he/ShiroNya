@@ -1,0 +1,24 @@
+{
+   
+    "configurations": [
+        {
+            "name": "调试 nest 源码",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "start:dev"
+            ],
+            "runtimeExecutable": "npm",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/",
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                // "!**/node_modules/**"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        }
+    ]
+}

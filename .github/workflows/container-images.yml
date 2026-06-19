@@ -1,0 +1,204 @@
+name: Build Shiro Nya images
+
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - 'v*'
+        paths:
+            - 'apps/admin-api/**'
+            - 'apps/app-api/**'
+            - 'apps/admin-web/**'
+            - 'libs/**'
+            - 'packages/spicedb-toolkit/**'
+            - 'prisma/**'
+            - 'proto/**'
+            - 'spicedb/**'
+            - 'static/**'
+            - 'docker/admin-api/Dockerfile'
+            - 'docker/compose.yaml'
+            - 'docker/config/**'
+            - 'docker/app-api/**'
+            - 'docker/admin-web/**'
+            - 'package.json'
+            - 'pnpm-lock.yaml'
+            - 'pnpm-workspace.yaml'
+            - 'tsconfig*.json'
+            - 'nest-cli.json'
+            - 'webpack*.cjs'
+            - 'prisma.admin.config.ts'
+            - 'prisma.app.config.ts'
+            - 'spicedb.config.ts'
+            - 'spicedb.app-api.config.ts'
+            - 'zod-generator.config.json'
+            - 'global.d.ts'
+            - '.dockerignore'
+            - '.github/workflows/container-images.yml'
+            - '.env'
+            - '.env.production'
+    workflow_dispatch:
+
+concurrency:
+    group: shiro-nya-images-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    packages: write
+
+env:
+    REGISTRY: ghcr.io
+    ADMIN_IMAGE_NAME: ${{ github.repository_owner }}/admin-api
+    APP_API_IMAGE_NAME: ${{ github.repository_owner }}/app-api
+    ADMIN_WEB_IMAGE_NAME: ${{ github.repository_owner }}/admin-web
+
+jobs:
+    build:
+        name: Build & push Shiro Nya images
+        runs-on: ubuntu-latest
+        timeout-minutes: 90
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Lowercase image names
+              id: image
+              run: |
+                  echo "admin=$(echo '${{ env.ADMIN_IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+                  echo "app_api=$(echo '${{ env.APP_API_IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+                  echo "admin_web=$(echo '${{ env.ADMIN_WEB_IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Log in to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract admin-api metadata
+              id: meta_admin
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.REGISTRY }}/${{ steps.image.outputs.admin }}
+                  tags: |
+                      type=ref,event=branch
+                      type=ref,event=tag
+                      type=semver,pattern={{version}}
+                      type=sha,prefix=,format=long
+                      type=sha,prefix=,format=short
+                  labels: |
+                      org.opencontainers.image.title=admin-api
+                      org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                      org.opencontainers.image.revision=${{ github.sha }}
+
+            - name: Extract admin-web metadata
+              id: meta_admin_web
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.REGISTRY }}/${{ steps.image.outputs.admin_web }}
+                  tags: |
+                      type=ref,event=branch
+                      type=ref,event=tag
+                      type=semver,pattern={{version}}
+                      type=sha,prefix=,format=long
+                      type=sha,prefix=,format=short
+                  labels: |
+                      org.opencontainers.image.title=admin-web
+                      org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                      org.opencontainers.image.revision=${{ github.sha }}
+
+            - name: Extract app-api metadata
+              id: meta_app_api
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.REGISTRY }}/${{ steps.image.outputs.app_api }}
+                  tags: |
+                      type=ref,event=branch
+                      type=ref,event=tag
+                      type=semver,pattern={{version}}
+                      type=sha,prefix=,format=long
+                      type=sha,prefix=,format=short
+                  labels: |
+                      org.opencontainers.image.title=app-api
+                      org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                      org.opencontainers.image.revision=${{ github.sha }}
+
+            - name: Build and push admin-api
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: docker/admin-api/Dockerfile
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ steps.meta_admin.outputs.tags }}
+                  labels: ${{ steps.meta_admin.outputs.labels }}
+                  cache-from: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.admin }}:buildcache
+                      type=gha
+                  cache-to: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.admin }}:buildcache,mode=max
+                      type=gha,mode=max
+
+            - name: Build and push app-api
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: docker/app-api/Dockerfile
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ steps.meta_app_api.outputs.tags }}
+                  labels: ${{ steps.meta_app_api.outputs.labels }}
+                  cache-from: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.app_api }}:buildcache
+                      type=gha
+                  cache-to: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.app_api }}:buildcache,mode=max
+                      type=gha,mode=max
+
+            - name: Build and push admin-web
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: docker/admin-web/Dockerfile
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ steps.meta_admin_web.outputs.tags }}
+                  labels: ${{ steps.meta_admin_web.outputs.labels }}
+                  build-args: |
+                      VITE_API_BASE_URL=${{ secrets.ADMIN_WEB_VITE_API_BASE_URL || 'http://127.0.0.1:57300/admin' }}
+                      VITE_MOCKJS=false
+                  cache-from: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.admin_web }}:buildcache
+                      type=gha
+                  cache-to: |
+                      type=registry,ref=${{ env.REGISTRY }}/${{ steps.image.outputs.admin_web }}:buildcache,mode=max
+                      type=gha,mode=max
+
+            - name: Summary
+              run: |
+                  echo "### Shiro Nya images published" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- admin-api digest: \`${{ steps.meta_admin.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- app-api digest: \`${{ steps.meta_app_api.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- admin-web digest: \`${{ steps.meta_admin_web.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- deployment: not run by this workflow" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- admin-api tags:" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  echo "${{ steps.meta_admin.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  echo "- app-api tags:" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  echo "${{ steps.meta_app_api.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  echo "- admin-web tags:" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  echo "${{ steps.meta_admin_web.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"

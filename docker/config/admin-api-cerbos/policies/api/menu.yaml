@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 后台菜单管理接口策略
+# 数据库语义：拥有 system.menu.index 页面权限的角色，可访问 admin_menu_mgmt 资源整组接口
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_menu_mgmt
+  version: default
+  rules:
+    - actions: ["create_menu", "get_all_menus", "find_one", "update_menu", "delete_menu"]
+      roles: ["super_admin", "test"]
+      effect: EFFECT_ALLOW

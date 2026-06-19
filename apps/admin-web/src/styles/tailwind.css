@@ -1,0 +1,61 @@
+@import "tailwindcss" prefix(tw);
+
+@theme inline {
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1600px;
+
+  --spacing: 4px;
+
+  --color-p-10: rgb(var(--primary-10));
+  --color-p-9: rgb(var(--primary-9));
+  --color-p-8: rgb(var(--primary-8));
+  --color-p-7: rgb(var(--primary-7));
+  --color-p-6: rgb(var(--primary-6));
+  --color-p-5: rgb(var(--primary-5));
+  --color-p-4: rgb(var(--primary-4));
+  --color-p-3: rgb(var(--primary-3));
+  --color-p-2: rgb(var(--primary-2));
+  --color-p-1: rgb(var(--primary-1));
+
+  --color-cb-1: var(--color-border-1);
+  --color-cb-2: var(--color-border-2);
+  --color-cb-3: var(--color-border-3);
+  --color-cb-4: var(--color-border-4);
+
+  --color-cf-1: var(--color-fill-1);
+  --color-cf-2: var(--color-fill-2);
+  --color-cf-3: var(--color-fill-3);
+  --color-cf-4: var(--color-fill-4);
+
+  --color-cbg-1: var(--color-bg-1);
+  --color-cbg-2: var(--color-bg-2);
+  --color-cbg-3: var(--color-bg-3);
+  --color-cbg-4: var(--color-bg-4);
+  --color-cbg-5: var(--color-bg-5);
+
+  --color-fill-transparent-1: var(--color-bg-opacity-1);
+  --color-fill-transparent-2: var(--color-bg-opacity-2);
+  --color-fill-transparent-3: var(--color-bg-opacity-3);
+  --color-fill-transparent-4: var(--color-bg-opacity-4);
+  --color-fill-transparent-5: var(--color-bg-opacity-5);
+
+  --color-c-1: var(--color-text-1);
+  --color-c-2: var(--color-text-2);
+  --color-c-3: var(--color-text-3);
+  --color-c-4: var(--color-text-4);
+
+  --text-body-1: 12px;
+  --text-body-2: 13px;
+  --text-body-3: 14px;
+  --text-title-1: 16px;
+  --text-title-2: 18px;
+  --text-title-3: 22px;
+  --text-title-4: 28px;
+  --text-display-1: 30px;
+  --text-display-2: 42px;
+  --text-display-3: 48px;
+  --text-display-4: 56px;
+}

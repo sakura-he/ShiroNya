@@ -1,0 +1,15 @@
+@use "sass:meta";
+
+// 明确声明全局样式与 Tailwind 的层顺序，确保 tw: utilities 保持最高优先级。
+@layer theme, base, app-base, app-components, components, utilities;
+
+// variable 样式应该在顶部，因为别的样式文件的样式可能会用到 css 变量。
+@layer app-base {
+	@include meta.load-css("common.scss");
+	@include meta.load-css("variable.scss");
+	@include meta.load-css("global.scss");
+}
+
+@layer app-components {
+	@include meta.load-css("transition/index.scss");
+}

@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 后台用户管理接口策略
+# 数据库语义：拥有 system.user.index 页面权限的角色，可访问 admin_user 资源整组接口
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_user
+  version: default
+  rules:
+    - actions: ["get_user_list", "create_user", "update_user", "delete_user", "reset_password", "get_user_sessions", "revoke_user_sessions", "test"]
+      roles: ["super_admin", "test"]
+      effect: EFFECT_ALLOW

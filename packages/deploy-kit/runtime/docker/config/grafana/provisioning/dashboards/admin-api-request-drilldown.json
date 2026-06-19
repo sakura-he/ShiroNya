@@ -1,0 +1,1059 @@
+{
+  "uid": "admin-api-request-drilldown",
+  "title": "Admin API 请求排查",
+  "description": "专门按用户 ID、request_id、接口路径排查请求日志、链路和接口耗时。",
+  "tags": [
+    "shiro-nya",
+    "admin-api",
+    "drilldown",
+    "request",
+    "logs",
+    "tempo"
+  ],
+  "timezone": "Asia/Shanghai",
+  "editable": true,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 2,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "← 服务总览",
+      "type": "link",
+      "icon": "dashboard",
+      "url": "/d/shiro-nya-overview",
+      "targetBlank": false
+    },
+    {
+      "title": "Admin API 日志中心",
+      "type": "link",
+      "icon": "cog",
+      "url": "/d/admin-api-logs",
+      "targetBlank": false
+    },
+    {
+      "title": "Tempo 链路追踪",
+      "type": "link",
+      "icon": "compass",
+      "url": "/d/shiro-nya-tempo-traces",
+      "targetBlank": false
+    },
+    {
+      "title": "查询中心",
+      "type": "link",
+      "icon": "search",
+      "url": "/d/shiro-nya-query-center",
+      "tooltip": "集中查看常用 Loki 查询面板",
+      "targetBlank": false
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "服务",
+        "type": "custom",
+        "query": "admin-api",
+        "current": {
+          "text": "admin-api",
+          "value": "admin-api"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "admin-api",
+            "value": "admin-api"
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "user_id",
+        "label": "用户 ID（精确/正则）",
+        "description": "例：01KK...；为空时用户面板不返回结果。",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "request_id",
+        "label": "Request ID（精确/正则）",
+        "description": "例：01KS...；来自响应头 x-request-id / RuntimeLogEntry.requestId。",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "endpoint_regex",
+        "label": "接口路径正则",
+        "description": "例：/admin/role/.* 或 /admin/account/navigation。",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": ".*",
+            "value": ".*"
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "trace_id",
+        "label": "Trace ID（精确/正则）",
+        "description": "从 Tempo / 控制台 trace:<id> 复制，用来反查 Loki 日志。",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "slow_ms",
+        "label": "慢请求阈值 ms",
+        "description": "慢请求日志面板的 duration_ms 阈值。",
+        "type": "textbox",
+        "query": "1000",
+        "current": {
+          "text": "1000",
+          "value": "1000"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "1000",
+            "value": "1000"
+          }
+        ],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "怎么用",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 1,
+      "type": "text",
+      "title": "排查入口说明",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "### 三个最常用入口\n\n- **按用户查**：填顶部 `用户 ID`，看这个用户的请求日志和 trace。\n- **按 Request ID 查**：填 `Request ID`，直接定位一次请求的日志和链路。\n- **按接口查耗时**：填 `接口路径正则`，看接口 P95/P99、请求量和慢请求日志。\n\n提示：`user_id` / `request_id` 是高基数字段，只在日志 JSON 或 Tempo span attributes 里查，不提升为 Loki label。"
+      }
+    },
+    {
+      "id": 200,
+      "type": "row",
+      "title": "按用户 ID / Request ID 查请求",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "用户请求日志",
+      "description": "填 user_id 后，按 RuntimeLogEntry.userId 精确/正则查询 user_action 日志。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"$service\", log_type=\"user_action\"} | json | userId=~\"$user_id\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Request ID 请求日志",
+      "description": "填 request_id 后，查询同一次请求的所有结构化日志。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"$service\"} | json | requestId=~\"$request_id\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "用户关联 Trace",
+      "description": "新镜像发布后，认证/授权 span 会写入 span.shiro.user_id，可直接按用户找链路耗时。",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{resource.service.name=\"$service\" && span.shiro.user_id=~\"$user_id\"}",
+          "limit": 20,
+          "tableType": "traces",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "filters": [],
+          "groupBy": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Request ID 关联 Trace",
+      "description": "按 span.shiro.request_id 查单次请求链路，适合从响应头 x-request-id 反查耗时。",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{resource.service.name=\"$service\" && span.shiro.request_id=~\"$request_id\"}",
+          "limit": 20,
+          "tableType": "traces",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "filters": [],
+          "groupBy": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        }
+      }
+    },
+    {
+      "id": 300,
+      "type": "row",
+      "title": "按接口路径查耗时",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "接口请求数",
+      "description": "endpoint_regex 范围内的 user_action 请求数。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\" | http_route=~\"$endpoint_regex\" [$__range]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "接口 P95 ms",
+      "description": "endpoint_regex 范围内 HTTP 完成日志的 P95 耗时。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "quantile_over_time(0.95, {app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | unwrap duration_ms [$__range])",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "接口 P99 ms",
+      "description": "endpoint_regex 范围内 HTTP 完成日志的 P99 耗时。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "quantile_over_time(0.99, {app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | unwrap duration_ms [$__range])",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "慢请求数",
+      "description": "duration_ms >= slow_ms 的请求数。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | duration_ms >= $slow_ms [$__range]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "错误请求数",
+      "description": "endpoint_regex 范围内 4xx/5xx 请求数。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({app=\"$service\", log_type=\"user_action\", level=~\"warn|error|fatal\"} | json http_route=\"http.route\" | http_route=~\"$endpoint_regex\" [$__range]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "平均耗时 ms",
+      "description": "endpoint_regex 范围内 HTTP 完成日志的平均耗时。",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time({app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | unwrap duration_ms [$__range])",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "接口 P95/P99 趋势",
+      "description": "按接口 route 分组展示 P95/P99；路径多时建议把 endpoint_regex 缩小。",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "P95",
+          "expr": "quantile_over_time(0.95, {app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | unwrap duration_ms [$__interval]) by (http_route)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": "P95 {{http_route}}"
+        },
+        {
+          "refId": "P99",
+          "expr": "quantile_over_time(0.99, {app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | unwrap duration_ms [$__interval]) by (http_route)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": "P99 {{http_route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "接口请求量趋势",
+      "description": "按接口 route 分组展示请求量，用来判断慢是否由流量尖峰引起。",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (http_route) (count_over_time({app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\" | http_route=~\"$endpoint_regex\" [$__interval]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": "{{http_route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "logs",
+      "title": "接口请求日志",
+      "description": "按 endpoint_regex 过滤 user_action 日志，适合看接口请求/响应快照。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\" | http_route=~\"$endpoint_regex\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 15,
+      "type": "logs",
+      "title": "慢请求日志",
+      "description": "按 endpoint_regex 和 slow_ms 过滤慢请求日志，展开日志详情可看 requestId、traceId、body、状态码。",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"$service\", log_type=\"user_action\"} | json http_route=\"http.route\", duration_ms=\"http.durationMs\" | http_route=~\"$endpoint_regex\" | duration_ms >= $slow_ms",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 400,
+      "type": "row",
+      "title": "Trace / 日志互跳",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "collapsed": false
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "title": "接口关联 Trace",
+      "description": "按 endpoint_regex 查询接口 trace；支持正则，例如 /admin/role/.* 或 .*get-session.*。",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 47
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{resource.service.name=\"$service\" && span.http.route=~\"$endpoint_regex\"}",
+          "limit": 20,
+          "tableType": "traces",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "filters": [],
+          "groupBy": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "logs",
+      "title": "Trace ID 查日志",
+      "description": "从 Tempo 或控制台复制 traceId 到这里，可反查同一条链路的日志。",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 47
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"$service\"} | json | traceId=~\"$trace_id\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "enableHighlighting": true,
+        "fontSize": "default",
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

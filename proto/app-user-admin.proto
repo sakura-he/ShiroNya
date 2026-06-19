@@ -1,0 +1,991 @@
+syntax = "proto3";
+
+package app_user_admin;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+
+service AppBusinessUserAdmin {
+  rpc ListBusinessUsers(ListBusinessUsersRequest) returns (ListBusinessUsersResponse);
+  rpc ListBusinessRoles(google.protobuf.Empty) returns (ListBusinessRolesResponse);
+  rpc GetBusinessUser(GetBusinessUserRequest) returns (UserMessage);
+  rpc GetBusinessUserRoleIds(GetBusinessUserRoleIdsRequest) returns (Int32ListValue);
+  rpc CreateBusinessUser(CreateBusinessUserRequest) returns (UserMessage);
+  rpc UpdateBusinessUser(UpdateBusinessUserRequest) returns (UserMessage);
+  rpc UpdateBusinessUserStatus(UpdateBusinessUserStatusRequest) returns (google.protobuf.Empty);
+  rpc SoftDeleteBusinessUser(SoftDeleteBusinessUserRequest) returns (google.protobuf.Empty);
+  rpc DeleteBusinessUser(DeleteBusinessUserRequest) returns (google.protobuf.Empty);
+  rpc ResetBusinessUserPassword(ResetBusinessUserPasswordRequest) returns (google.protobuf.Empty);
+}
+
+service AppBetterAuthAdmin {
+  rpc ListAdminUsers(ListAdminUsersRequest) returns (ListAdminUsersResponse);
+  rpc GetAdminUser(GetAdminUserRequest) returns (UserMessage);
+  rpc CreateAdminUser(CreateAdminUserRequest) returns (UserMessage);
+  rpc UpdateAdminUser(UpdateAdminUserRequest) returns (UserMessage);
+  rpc BanAdminUser(BanAdminUserRequest) returns (UserMessage);
+  rpc UnbanAdminUser(UnbanAdminUserRequest) returns (UserMessage);
+  rpc ListAdminUserSessions(ListAdminUserSessionsRequest) returns (ListAdminUserSessionsResponse);
+  rpc ImpersonateAdminUser(ImpersonateAdminUserRequest) returns (ImpersonationResponse);
+  rpc StopImpersonatingAdminUser(StopImpersonatingAdminUserRequest) returns (ImpersonationResponse);
+  rpc RevokeAdminUserSession(RevokeAdminUserSessionRequest) returns (SuccessResponse);
+  rpc RevokeAdminUserSessions(RevokeAdminUserSessionsRequest) returns (SuccessResponse);
+  rpc RemoveAdminUser(RemoveAdminUserRequest) returns (SuccessResponse);
+  rpc SetAdminUserPassword(SetAdminUserPasswordRequest) returns (SuccessResponse);
+  rpc CheckAdminUserPermission(CheckAdminUserPermissionRequest) returns (SuccessResponse);
+}
+
+service AppRoleMenuPolicyAdmin {
+  rpc GetRoleMenuIds(GetRoleMenuIdsRequest) returns (Int32ListValue);
+  rpc AssignRoleMenus(AssignRoleMenusRequest) returns (SuccessResponse);
+  rpc RemoveRoleMenuPolicy(RemoveRoleMenuPolicyRequest) returns (SuccessResponse);
+}
+
+service AppRbacRoleAdmin {
+  rpc ListRbacRoles(RbacRoleListRequest) returns (RbacRoleListResponse);
+  rpc GetRbacRoleRelations(RbacIdRequest) returns (RbacRoleRelationsResponse);
+  rpc QueryRbacRoleAssignableUsers(RbacRoleAssignableUsersRequest) returns (RbacUserRelationListResponse);
+  rpc QueryRbacRoleAssignableUserGroups(RbacRoleAssignableUserGroupsRequest) returns (RbacUserGroupRelationListResponse);
+  rpc QueryRbacRoleAssignableParentRoles(RbacRoleAssignableParentRolesRequest) returns (RbacRoleRelationListResponse);
+  rpc QueryRbacRoleAssignablePermissions(RbacRoleAssignablePermissionsRequest) returns (RbacPermissionRelationListResponse);
+  rpc QueryRbacRoleEffectiveUsers(RbacRoleEffectiveUsersRequest) returns (RbacUserRelationListResponse);
+  rpc CreateRbacRole(RbacRoleMutationRequest) returns (RbacRoleMessage);
+  rpc UpdateRbacRole(RbacRoleMutationRequest) returns (RbacRoleMessage);
+  rpc DeleteRbacRole(RbacIdRequest) returns (SuccessResponse);
+  rpc AssignRbacRoleUsers(RbacRoleUsersRequest) returns (SuccessResponse);
+  rpc AssignRbacRoleUserGroups(RbacRoleUserGroupsRequest) returns (SuccessResponse);
+  rpc AssignRbacRoleParentRoles(RbacRoleParentRolesRequest) returns (SuccessResponse);
+  rpc AssignRbacRolePermissions(RbacRolePermissionsRequest) returns (SuccessResponse);
+}
+
+service AppRbacUserGroupAdmin {
+  rpc ListRbacUserGroups(RbacUserGroupListRequest) returns (RbacUserGroupListResponse);
+  rpc GetRbacUserGroupRelations(RbacIdRequest) returns (RbacUserGroupRelationsResponse);
+  rpc QueryRbacUserGroupMembers(RbacUserGroupMembersRequest) returns (RbacUserRelationListResponse);
+  rpc QueryRbacUserGroupRoles(RbacUserGroupRolesRequest) returns (RbacRoleRelationListResponse);
+  rpc QueryRbacUserGroupMenus(RbacUserGroupMenusRequest) returns (RbacMenuListResponse);
+  rpc CreateRbacUserGroup(RbacUserGroupMutationRequest) returns (RbacUserGroupMessage);
+  rpc UpdateRbacUserGroup(RbacUserGroupMutationRequest) returns (RbacUserGroupMessage);
+  rpc DeleteRbacUserGroup(RbacIdRequest) returns (SuccessResponse);
+  rpc AssignRbacUserGroupMembers(RbacUserGroupMembersMutationRequest) returns (SuccessResponse);
+  rpc AssignRbacUserGroupRoles(RbacUserGroupRolesMutationRequest) returns (SuccessResponse);
+}
+
+service AppRbacPermissionAdmin {
+  rpc ListRbacPermissions(RbacPermissionListRequest) returns (RbacPermissionListResponse);
+  rpc GetRbacPermissionDeclarationBoard(google.protobuf.Empty) returns (RbacPermissionDeclarationBoardResponse);
+  rpc SuggestRbacPermissionCode(RbacPermissionCodeSuggestionRequest) returns (RbacPermissionCodeSuggestionResponse);
+  rpc CreateRbacPermission(RbacPermissionMutationRequest) returns (RbacPermissionMessage);
+  rpc UpdateRbacPermission(RbacPermissionMutationRequest) returns (RbacPermissionMessage);
+  rpc DeleteRbacPermission(RbacIdRequest) returns (SuccessResponse);
+  rpc GetRbacPermissionRelations(RbacIdRequest) returns (RbacPermissionRelationsResponse);
+  rpc QueryRbacPermissionRoles(RbacPermissionRolesRequest) returns (RbacRoleRelationListResponse);
+  rpc AssignRbacPermissionRoles(RbacPermissionRolesMutationRequest) returns (SuccessResponse);
+}
+
+service AppRbacPermissionGroupAdmin {
+  rpc ListRbacPermissionGroups(RbacPermissionGroupListRequest) returns (RbacPermissionGroupListResponse);
+  rpc CreateRbacPermissionGroup(RbacPermissionGroupMutationRequest) returns (RbacPermissionGroupMessage);
+  rpc UpdateRbacPermissionGroup(RbacPermissionGroupMutationRequest) returns (RbacPermissionGroupMessage);
+  rpc DeleteRbacPermissionGroup(RbacIdRequest) returns (SuccessResponse);
+  rpc GetRbacPermissionGroupRelations(RbacIdRequest) returns (RbacPermissionGroupRelationsResponse);
+  rpc AssignRbacPermissionGroupRelations(RbacPermissionGroupRelationsMutationRequest) returns (RbacPermissionGroupRelationsResponse);
+}
+
+service AppRbacMenuAdmin {
+  rpc ListRbacMenuTree(RbacMenuTreeRequest) returns (RbacMenuListResponse);
+  rpc ListRbacMenus(RbacMenuListRequest) returns (RbacMenuListResponse);
+  rpc GetRbacMenuDetail(RbacIdRequest) returns (RbacMenuDetailResponse);
+  rpc CreateRbacMenu(RbacMenuMutationRequest) returns (RbacMenuMessage);
+  rpc UpdateRbacMenu(RbacMenuMutationRequest) returns (RbacMenuMessage);
+  rpc DeleteRbacMenu(RbacIdRequest) returns (SuccessResponse);
+}
+
+service AppCerbosAbacAdmin {
+  rpc GetAbacHealth(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc GetAbacFields(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc ListAbacFieldRegistry(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc UpsertAbacField(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc DeleteAbacField(CerbosAbacIdRequest) returns (CerbosAbacJsonResponse);
+  rpc ListAbacRbacPermissionOptions(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc ListAbacPolicyGroups(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc UpsertAbacPolicyGroup(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc DeleteAbacPolicyGroup(CerbosAbacIdRequest) returns (CerbosAbacJsonResponse);
+  rpc ListAbacManualPolicies(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc ValidateAbacManualPolicy(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc UpsertAbacManualPolicy(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc DeleteAbacManualPolicy(CerbosAbacIdRequest) returns (CerbosAbacJsonResponse);
+  rpc PreviewAbacCompile(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc PreviewAbacPublish(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc PublishAbac(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+  rpc GetAbacReleases(google.protobuf.Empty) returns (CerbosAbacJsonResponse);
+  rpc RollbackAbacRelease(CerbosAbacRevisionRequest) returns (CerbosAbacJsonResponse);
+  rpc TestAbacRuntime(CerbosAbacJsonRequest) returns (CerbosAbacJsonResponse);
+}
+
+message StringPatch {
+  oneof kind {
+    string value = 1;
+    google.protobuf.NullValue null_value = 2;
+  }
+}
+
+message StringListValue {
+  repeated string values = 1;
+}
+
+message Int32ListValue {
+  repeated int32 values = 1;
+}
+
+message Int64ListValue {
+  repeated int64 values = 1;
+}
+
+message AdminFilterValue {
+  oneof kind {
+    string string_value = 1;
+    int64 number_value = 2;
+    bool bool_value = 3;
+    StringListValue string_list = 4;
+    Int64ListValue number_list = 5;
+  }
+}
+
+message PermissionEntry {
+  string resource = 1;
+  repeated string actions = 2;
+}
+
+message BusinessRoleMessage {
+  int32 id = 1;
+  string name = 2;
+  string code = 3;
+  google.protobuf.StringValue description = 4;
+  string status = 5;
+}
+
+message ListBusinessRolesResponse {
+  repeated BusinessRoleMessage records = 1;
+}
+
+message UserProfileMessage {
+  int32 id = 1;
+  string user_id = 2;
+  google.protobuf.StringValue nickname = 3;
+  google.protobuf.StringValue avatar = 4;
+  int32 gender = 5;
+  int32 level = 6;
+  int32 exp = 7;
+  int32 status = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message UserMessage {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  bool email_verified = 4;
+  google.protobuf.StringValue image = 5;
+  google.protobuf.StringValue role = 6;
+  bool banned = 7;
+  google.protobuf.StringValue ban_reason = 8;
+  google.protobuf.StringValue ban_expires = 9;
+  string created_at = 10;
+  string updated_at = 11;
+  google.protobuf.StringValue phone_number = 12;
+  google.protobuf.BoolValue phone_number_verified = 13;
+  UserProfileMessage profile = 14;
+  repeated int32 role_ids = 15;
+}
+
+message SessionMessage {
+  string id = 1;
+  string expires_at = 2;
+  string token = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  google.protobuf.StringValue ip_address = 6;
+  google.protobuf.StringValue user_agent = 7;
+  string user_id = 8;
+  google.protobuf.StringValue impersonated_by = 9;
+}
+
+message PaginationMessage {
+  int32 total = 1;
+  int32 total_pages = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message SuccessResponse {
+  bool success = 1;
+}
+
+message CerbosAbacJsonRequest {
+  string json = 1;
+}
+
+message CerbosAbacJsonResponse {
+  string json = 1;
+}
+
+message CerbosAbacIdRequest {
+  string id = 1;
+}
+
+message CerbosAbacRevisionRequest {
+  string revision = 1;
+}
+
+message ListBusinessUsersRequest {
+  google.protobuf.StringValue name = 1;
+  google.protobuf.StringValue email = 2;
+  google.protobuf.StringValue phone_number = 3;
+  google.protobuf.Int32Value status = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+  reserved 9;
+  google.protobuf.StringValue id = 7;
+  google.protobuf.StringValue nickname = 8;
+  google.protobuf.Int32Value role_id = 10;
+  google.protobuf.BoolValue email_verified = 11;
+  google.protobuf.BoolValue phone_number_verified = 12;
+  google.protobuf.StringValue created_at_start = 13;
+  google.protobuf.StringValue created_at_end = 14;
+  google.protobuf.StringValue updated_at_start = 15;
+  google.protobuf.StringValue updated_at_end = 16;
+}
+
+message ListBusinessUsersResponse {
+  repeated UserMessage records = 1;
+  PaginationMessage pagination = 2;
+}
+
+message GetBusinessUserRequest {
+  string id = 1;
+}
+
+message GetBusinessUserRoleIdsRequest {
+  string user_id = 1;
+}
+
+message CreateBusinessUserRequest {
+  string name = 1;
+  string email = 2;
+  google.protobuf.StringValue phone_number = 3;
+  string password = 4;
+  google.protobuf.StringValue nickname = 5;
+  google.protobuf.StringValue avatar = 6;
+  int32 status = 7;
+  repeated int32 role_ids = 8;
+}
+
+message UpdateBusinessUserRequest {
+  string id = 1;
+  google.protobuf.StringValue name = 2;
+  google.protobuf.StringValue email = 3;
+  StringPatch phone_number = 4;
+  StringPatch nickname = 5;
+  StringPatch avatar = 6;
+  google.protobuf.Int32Value status = 7;
+  Int32ListValue role_ids = 8;
+}
+
+message UpdateBusinessUserStatusRequest {
+  string id = 1;
+  int32 status = 2;
+  google.protobuf.StringValue ban_reason = 3;
+}
+
+message SoftDeleteBusinessUserRequest {
+  string id = 1;
+  google.protobuf.StringValue delete_reason = 2;
+}
+
+message DeleteBusinessUserRequest {
+  string id = 1;
+  google.protobuf.StringValue delete_reason = 2;
+}
+
+message ResetBusinessUserPasswordRequest {
+  string id = 1;
+  string password = 2;
+}
+
+message ListAdminUsersRequest {
+  google.protobuf.StringValue search_value = 1;
+  google.protobuf.StringValue search_field = 2;
+  google.protobuf.StringValue search_operator = 3;
+  google.protobuf.Int32Value limit = 4;
+  google.protobuf.Int32Value offset = 5;
+  google.protobuf.StringValue sort_by = 6;
+  google.protobuf.StringValue sort_direction = 7;
+  google.protobuf.StringValue filter_field = 8;
+  AdminFilterValue filter_value = 9;
+  google.protobuf.StringValue filter_operator = 10;
+}
+
+message ListAdminUsersResponse {
+  repeated UserMessage users = 1;
+  int32 total = 2;
+}
+
+message GetAdminUserRequest {
+  string user_id = 1;
+}
+
+message CreateAdminUserRequest {
+  string email = 1;
+  string name = 2;
+  google.protobuf.StringValue password = 3;
+  google.protobuf.StringValue role = 4;
+  google.protobuf.StringValue data_json = 5;
+}
+
+message UpdateAdminUserRequest {
+  string user_id = 1;
+  string data_json = 2;
+}
+
+message BanAdminUserRequest {
+  string user_id = 1;
+  google.protobuf.StringValue ban_reason = 2;
+  google.protobuf.Int32Value ban_expires_in = 3;
+}
+
+message UnbanAdminUserRequest {
+  string user_id = 1;
+}
+
+message ListAdminUserSessionsRequest {
+  string user_id = 1;
+}
+
+message ListAdminUserSessionsResponse {
+  repeated SessionMessage sessions = 1;
+}
+
+message ImpersonateAdminUserRequest {
+  string user_id = 1;
+}
+
+message StopImpersonatingAdminUserRequest {
+  string session_token = 1;
+}
+
+message ImpersonationResponse {
+  SessionMessage session = 1;
+  UserMessage user = 2;
+}
+
+message RevokeAdminUserSessionRequest {
+  string session_token = 1;
+}
+
+message RevokeAdminUserSessionsRequest {
+  string user_id = 1;
+}
+
+message RemoveAdminUserRequest {
+  string user_id = 1;
+}
+
+message SetAdminUserPasswordRequest {
+  string user_id = 1;
+  string new_password = 2;
+}
+
+message CheckAdminUserPermissionRequest {
+  google.protobuf.StringValue user_id = 1;
+  google.protobuf.StringValue role = 2;
+  repeated PermissionEntry permissions = 3;
+}
+
+message GetRoleMenuIdsRequest {
+  string role_code = 1;
+}
+
+message AssignRoleMenusRequest {
+  string role_code = 1;
+  repeated int32 menu_ids = 2;
+}
+
+message RemoveRoleMenuPolicyRequest {
+  string role_code = 1;
+}
+
+message RbacIdRequest {
+  int32 id = 1;
+}
+
+message RbacMetaMessage {
+  optional bool viewer_can_create_role = 1;
+  optional bool viewer_can_create_user_group = 2;
+  optional bool viewer_can_create_permission = 3;
+  optional bool viewer_can_update_permission = 4;
+  optional bool viewer_can_delete_permission = 5;
+  optional bool viewer_can_assign_role = 6;
+  optional bool viewer_can_create_group = 7;
+  optional bool viewer_can_update_group = 8;
+  optional bool viewer_can_delete_group = 9;
+  optional bool viewer_can_assign_group = 10;
+  optional bool viewer_can_create_menu = 11;
+  optional bool viewer_can_update_menu = 12;
+  optional bool viewer_can_delete_menu = 13;
+}
+
+message RbacRoleMessage {
+  int32 id = 1;
+  string name = 2;
+  string code = 3;
+  string description = 4;
+  int32 sort = 5;
+  optional bool is_builtin = 6;
+  optional bool is_super_admin = 7;
+  string status = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  string deleted_at = 11;
+  string created_by = 12;
+  string updated_by = 13;
+  optional bool assigned = 14;
+  optional bool viewer_can_update = 15;
+  optional bool viewer_can_delete = 16;
+  optional bool viewer_can_assign_user = 17;
+  optional bool viewer_can_assign_user_group = 18;
+  optional bool viewer_can_assign_parent_role = 19;
+  optional bool viewer_can_assign_permission = 20;
+}
+
+message RbacUserGroupMessage {
+  int32 id = 1;
+  string name = 2;
+  string code = 3;
+  string description = 4;
+  int32 sort = 5;
+  string status = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  string deleted_at = 9;
+  string created_by = 10;
+  string updated_by = 11;
+  repeated string member_user_ids = 12;
+  repeated int32 role_ids = 13;
+  optional bool assigned = 14;
+  optional bool viewer_can_update = 15;
+  optional bool viewer_can_delete = 16;
+  optional bool viewer_can_assign_member = 17;
+  optional bool viewer_can_assign_role = 18;
+}
+
+message RbacPermissionMessage {
+  int32 id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  string kind = 5;
+  int32 group_id = 6;
+  int32 sort = 7;
+  optional bool is_builtin = 8;
+  string status = 9;
+  string created_at = 10;
+  string updated_at = 11;
+  string deleted_at = 12;
+  string created_by = 13;
+  string updated_by = 14;
+  optional bool assigned = 15;
+  optional bool viewer_can_update = 16;
+  optional bool viewer_can_delete = 17;
+  optional bool viewer_can_assign_role = 18;
+}
+
+message RbacPermissionGroupMessage {
+  int32 id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  int32 sort = 5;
+  string status = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  string deleted_at = 9;
+  string created_by = 10;
+  string updated_by = 11;
+  int32 permission_count = 12;
+  int32 menu_count = 13;
+  optional bool viewer_can_update = 14;
+  optional bool viewer_can_delete = 15;
+  optional bool viewer_can_assign = 16;
+}
+
+message RbacMenuMessage {
+  int32 id = 1;
+  int32 pid = 2;
+  string title = 3;
+  string description = 4;
+  string component_path = 5;
+  string type = 6;
+  int32 group_id = 7;
+  string path = 8;
+  string icon = 9;
+  int32 order = 10;
+  string layout = 11;
+  string page_type = 12;
+  optional bool is_resident = 13;
+  optional bool is_cache = 14;
+  optional bool is_menu_visible = 15;
+  string status = 16;
+  optional bool show_children = 17;
+  string required_permission_code = 18;
+  string component_name = 19;
+  optional bool is_tab_visible = 20;
+  string created_at = 21;
+  string updated_at = 22;
+  string created_by = 23;
+  string updated_by = 24;
+  optional bool assigned = 25;
+  optional bool viewer_can_update = 26;
+  optional bool viewer_can_delete = 27;
+  optional bool viewer_can_assign_role = 28;
+  optional bool viewer_can_create_menu = 29;
+  optional bool viewer_can_update_menu = 30;
+  optional bool viewer_can_delete_menu = 31;
+}
+
+message RbacUserRelationMessage {
+  string id = 1;
+  string username = 2;
+  string name = 3;
+  string email = 4;
+  optional bool banned = 5;
+  string image = 6;
+  optional bool assigned = 7;
+  repeated string effective_role_sources = 8;
+  repeated int32 effective_role_source_role_ids = 9;
+  repeated int32 effective_role_source_group_ids = 10;
+}
+
+message RbacPermissionDeclarationTreeNode {
+  string key = 1;
+  string title = 2;
+  string type = 3;
+  string source_kind = 4;
+  string module_name = 5;
+  string class_name = 6;
+  string method_name = 7;
+  repeated RbacPermissionDeclarationTreeNode children = 8;
+}
+
+message RbacPermissionDeclarationMessage {
+  string permission_code = 1;
+  reserved 2;
+  string name = 3;
+  string description = 4;
+  string kind = 5;
+  string module_name = 6;
+  string class_name = 7;
+  string method_name = 8;
+  string source_kind = 9;
+  string declaration_key = 10;
+  string database_state = 11;
+  RbacPermissionMessage permission = 12;
+}
+
+message RbacRoleListRequest {
+  optional string name = 1;
+  optional string code = 2;
+  optional string keyword = 3;
+  optional string status = 4;
+  optional string created_at = 5;
+  optional int32 page_size = 6;
+  optional int32 page = 7;
+}
+
+message RbacRoleMutationRequest {
+  optional int32 id = 1;
+  optional string name = 2;
+  optional string code = 3;
+  optional string description = 4;
+  optional bool clear_description = 5;
+  optional int32 sort = 6;
+  optional bool is_builtin = 7;
+  optional bool is_super_admin = 8;
+  optional string status = 9;
+}
+
+message RbacRoleAssignableUsersRequest {
+  int32 role_id = 1;
+  optional string keyword = 2;
+  optional string id = 3;
+  optional string username = 4;
+  optional string name = 5;
+  optional string email = 6;
+  optional bool assigned = 7;
+  optional bool banned = 8;
+  repeated string draft_user_ids = 9;
+  optional int32 page_size = 10;
+  optional int32 page = 11;
+}
+
+message RbacRoleAssignableUserGroupsRequest {
+  int32 role_id = 1;
+  optional string keyword = 2;
+  optional string name = 3;
+  optional string code = 4;
+  optional string description = 5;
+  optional bool assigned = 6;
+  optional string status = 7;
+  repeated int32 draft_user_group_ids = 8;
+  optional int32 page_size = 9;
+  optional int32 page = 10;
+}
+
+message RbacRoleAssignableParentRolesRequest {
+  int32 role_id = 1;
+  optional string keyword = 2;
+  optional string name = 3;
+  optional string code = 4;
+  optional string description = 5;
+  optional bool assigned = 6;
+  optional string status = 7;
+  repeated int32 draft_role_ids = 8;
+  optional int32 page_size = 9;
+  optional int32 page = 10;
+}
+
+message RbacRoleAssignablePermissionsRequest {
+  int32 role_id = 1;
+  optional string keyword = 2;
+  optional string code = 3;
+  optional string name = 4;
+  optional string description = 5;
+  optional string kind = 6;
+  optional bool assigned = 7;
+  optional string status = 8;
+  repeated int32 draft_permission_ids = 9;
+  optional int32 page_size = 10;
+  optional int32 page = 11;
+}
+
+message RbacRoleEffectiveUsersRequest {
+  int32 role_id = 1;
+  optional string keyword = 2;
+  optional string id = 3;
+  optional string username = 4;
+  optional string name = 5;
+  optional string email = 6;
+  optional bool banned = 7;
+  optional int32 page_size = 8;
+  optional int32 page = 9;
+}
+
+message RbacRoleUsersRequest {
+  int32 role_id = 1;
+  repeated string user_ids = 2;
+}
+
+message RbacRoleUserGroupsRequest {
+  int32 role_id = 1;
+  repeated int32 user_group_ids = 2;
+}
+
+message RbacRoleParentRolesRequest {
+  int32 role_id = 1;
+  repeated int32 parent_role_ids = 2;
+}
+
+message RbacRolePermissionsRequest {
+  int32 role_id = 1;
+  repeated int32 permission_ids = 2;
+}
+
+message RbacUserGroupListRequest {
+  optional string name = 1;
+  optional string keyword = 2;
+  optional string code = 3;
+  optional string status = 4;
+  optional int32 page_size = 5;
+  optional int32 page = 6;
+}
+
+message RbacUserGroupMutationRequest {
+  optional int32 id = 1;
+  optional string name = 2;
+  optional string code = 3;
+  optional string description = 4;
+  optional bool clear_description = 5;
+  optional int32 sort = 6;
+  optional string status = 7;
+}
+
+message RbacUserGroupMembersRequest {
+  int32 group_id = 1;
+  optional string keyword = 2;
+  optional string id = 3;
+  optional string username = 4;
+  optional string name = 5;
+  optional string email = 6;
+  optional bool assigned = 7;
+  optional bool banned = 8;
+  repeated string draft_user_ids = 9;
+  optional int32 page_size = 10;
+  optional int32 page = 11;
+}
+
+message RbacUserGroupRolesRequest {
+  int32 group_id = 1;
+  optional string keyword = 2;
+  optional string name = 3;
+  optional string code = 4;
+  optional string description = 5;
+  optional bool assigned = 6;
+  optional string status = 7;
+  repeated int32 draft_role_ids = 8;
+  optional int32 page_size = 9;
+  optional int32 page = 10;
+}
+
+message RbacUserGroupMenusRequest {
+  int32 group_id = 1;
+  optional string keyword = 2;
+  optional string title = 3;
+  optional string required_permission_code = 4;
+  optional string path = 5;
+  optional string type = 6;
+  optional string status = 7;
+  optional int32 page_size = 8;
+  optional int32 page = 9;
+}
+
+message RbacUserGroupMembersMutationRequest {
+  int32 group_id = 1;
+  repeated string user_ids = 2;
+}
+
+message RbacUserGroupRolesMutationRequest {
+  int32 group_id = 1;
+  repeated int32 role_ids = 2;
+}
+
+message RbacPermissionListRequest {
+  optional string keyword = 1;
+  optional string code = 2;
+  optional string name = 3;
+  optional string description = 4;
+  optional string kind = 5;
+  optional string status = 6;
+  optional int32 group_id = 7;
+  optional int32 page_size = 8;
+  optional int32 page = 9;
+}
+
+message RbacPermissionMutationRequest {
+  optional int32 id = 1;
+  optional string code = 2;
+  optional string name = 3;
+  optional string description = 4;
+  optional bool clear_description = 5;
+  optional string kind = 6;
+  optional int32 group_id = 7;
+  optional bool clear_group_id = 8;
+  optional int32 sort = 9;
+  optional bool is_builtin = 10;
+  optional string status = 11;
+}
+
+message RbacPermissionCodeSuggestionRequest {
+  string permission_code = 1;
+}
+
+message RbacPermissionRolesRequest {
+  int32 permission_id = 1;
+  optional string keyword = 2;
+  optional string name = 3;
+  optional string code = 4;
+  optional string description = 5;
+  optional bool assigned = 6;
+  optional string status = 7;
+  repeated int32 draft_role_ids = 8;
+  optional int32 page_size = 9;
+  optional int32 page = 10;
+}
+
+message RbacPermissionRolesMutationRequest {
+  int32 permission_id = 1;
+  repeated int32 role_ids = 2;
+}
+
+message RbacPermissionGroupListRequest {
+  optional string keyword = 1;
+  optional string status = 2;
+  optional int32 page_size = 3;
+  optional int32 page = 4;
+}
+
+message RbacPermissionGroupMutationRequest {
+  optional int32 id = 1;
+  optional string code = 2;
+  optional string name = 3;
+  optional string description = 4;
+  optional bool clear_description = 5;
+  optional int32 sort = 6;
+  optional string status = 7;
+}
+
+message RbacPermissionGroupRelationsMutationRequest {
+  int32 group_id = 1;
+  repeated int32 permission_ids = 2;
+  repeated int32 menu_ids = 3;
+}
+
+message RbacMenuTreeRequest {
+  optional string keyword = 1;
+  optional string name = 2;
+  optional string type = 3;
+  optional string status = 4;
+  optional int32 group_id = 5;
+}
+
+message RbacMenuListRequest {
+  optional string keyword = 1;
+  optional string name = 2;
+  optional string title = 3;
+  optional string required_permission_code = 4;
+  optional string path = 5;
+  optional string status = 6;
+  optional string type = 7;
+  optional int32 group_id = 8;
+  optional string created_at = 9;
+  optional int32 page_size = 10;
+  optional int32 page = 11;
+}
+
+message RbacMenuMutationRequest {
+  optional int32 id = 1;
+  optional int32 pid = 2;
+  optional bool clear_pid = 3;
+  optional string title = 4;
+  optional string description = 5;
+  optional bool clear_description = 6;
+  optional string component_path = 7;
+  optional bool clear_component_path = 8;
+  optional string type = 9;
+  optional int32 group_id = 10;
+  optional bool clear_group_id = 11;
+  optional string path = 12;
+  optional bool clear_path = 13;
+  optional string icon = 14;
+  optional bool clear_icon = 15;
+  optional int32 order = 16;
+  optional bool clear_order = 17;
+  optional string layout = 18;
+  optional string page_type = 19;
+  optional bool is_resident = 20;
+  optional bool is_cache = 21;
+  optional bool is_menu_visible = 22;
+  optional string status = 23;
+  optional bool show_children = 24;
+  optional string required_permission_code = 25;
+  optional string component_name = 26;
+  optional bool clear_component_name = 27;
+  optional bool is_tab_visible = 28;
+}
+
+message RbacRoleListResponse {
+  repeated RbacRoleMessage records = 1;
+  RbacMetaMessage meta = 2;
+  PaginationMessage pagination = 3;
+}
+
+message RbacRoleRelationsResponse {
+  RbacRoleMessage role = 1;
+  repeated string direct_user_ids = 2;
+  repeated int32 user_group_ids = 3;
+  repeated int32 parent_role_ids = 4;
+  repeated int32 permission_ids = 5;
+  repeated int32 effective_permission_ids = 6;
+  repeated int32 inherited_permission_ids = 7;
+  repeated string effective_user_ids = 8;
+}
+
+message RbacRoleRelationListResponse {
+  repeated RbacRoleMessage records = 1;
+  PaginationMessage pagination = 2;
+}
+
+message RbacUserRelationListResponse {
+  repeated RbacUserRelationMessage records = 1;
+  PaginationMessage pagination = 2;
+}
+
+message RbacUserGroupListResponse {
+  repeated RbacUserGroupMessage records = 1;
+  RbacMetaMessage meta = 2;
+  PaginationMessage pagination = 3;
+}
+
+message RbacUserGroupRelationsResponse {
+  RbacUserGroupMessage group = 1;
+  repeated string member_user_ids = 2;
+  repeated int32 role_ids = 3;
+  repeated int32 visible_menu_ids = 4;
+}
+
+message RbacUserGroupRelationListResponse {
+  repeated RbacUserGroupMessage records = 1;
+  PaginationMessage pagination = 2;
+}
+
+message RbacPermissionListResponse {
+  repeated RbacPermissionMessage records = 1;
+  RbacMetaMessage meta = 2;
+  PaginationMessage pagination = 3;
+}
+
+message RbacPermissionDeclarationBoardResponse {
+  repeated RbacPermissionDeclarationTreeNode tree = 1;
+  repeated RbacPermissionDeclarationMessage declarations = 2;
+  repeated RbacPermissionMessage unassigned_permissions = 3;
+  RbacMetaMessage meta = 4;
+}
+
+message RbacPermissionCodeSuggestionResponse {
+  string code = 1;
+}
+
+message RbacPermissionRelationsResponse {
+  RbacPermissionMessage permission = 1;
+  repeated int32 role_ids = 2;
+  repeated int32 menu_ids = 3;
+  repeated string effective_user_ids = 4;
+}
+
+message RbacPermissionRelationListResponse {
+  repeated RbacPermissionMessage records = 1;
+  PaginationMessage pagination = 2;
+}
+
+message RbacPermissionGroupListResponse {
+  repeated RbacPermissionGroupMessage records = 1;
+  RbacMetaMessage meta = 2;
+  PaginationMessage pagination = 3;
+}
+
+message RbacPermissionGroupRelationsResponse {
+  RbacPermissionGroupMessage group = 1;
+  repeated int32 permission_ids = 2;
+  repeated int32 menu_ids = 3;
+}
+
+message RbacMenuListResponse {
+  repeated RbacMenuMessage records = 1;
+  RbacMetaMessage meta = 2;
+  PaginationMessage pagination = 3;
+}
+
+message RbacMenuDetailResponse {
+  RbacMenuMessage menu = 1;
+}

@@ -1,0 +1,42 @@
+/// 数据字典表
+model DictCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(191)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("dict_category")
+}
+
+/// 数据字典表
+model Dict {
+  id          Int       @id @default(autoincrement())
+  category    String    @db.VarChar(191)
+  name        String    @db.VarChar(191)
+  value       String    @db.VarChar(191)
+  description String?   @db.VarChar(191)
+  status      Int       @default(1)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  dictKey     DictKey[]
+
+  @@unique([category, value])
+  @@map("dict")
+}
+
+/// 数据字典表
+model DictKey {
+  id          Int      @id @default(autoincrement())
+  dictId      Int      @map("dict_id")
+  key         String   @db.VarChar(191)
+  value       String   @db.VarChar(191)
+  description String?  @db.VarChar(191)
+  status      Int      @default(1)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  dict        Dict     @relation(fields: [dictId], references: [id])
+
+  @@map("dict_key")
+}

@@ -1,0 +1,59 @@
+name: Publish deploy script
+
+on:
+    push:
+        tags:
+            - 'v*'
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Release tag to upload assets to'
+                required: true
+
+permissions:
+    contents: write
+
+jobs:
+    publish:
+        name: Build and publish deploy script
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build deploy script bundle
+              run: pnpm run deploy-script:build
+
+            - name: Generate deploy release script
+              run: pnpm run deploy-script:release
+
+            - name: Resolve release tag
+              id: release
+              run: |
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Publish GitHub Release assets
+              uses: softprops/action-gh-release@v3
+              with:
+                  tag_name: ${{ steps.release.outputs.tag }}
+                  fail_on_unmatched_files: true
+                  files: |
+                      release/deploy/shiro-nya-deploy.mjs
+                      release/deploy/checksums.txt

@@ -1,0 +1,38 @@
+// Prisma 基础配置：数据源与生成器定义
+// datasource 的 url 由 prisma.app.config.ts 提供，此处仅声明 provider
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../../libs/prisma-app/src/generated"
+  binaryTargets          = ["native", "linux-musl", "rhel-openssl-3.0.x"]
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+  moduleFormat           = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator zod {
+  config                           = "../zod-generator.config.json"
+  provider                         = "prisma-zod-generator"
+  output                           = "../../libs/prisma-app/src/generated/zod"
+  relationModel                    = true
+  modelCase                        = "PascalCase"
+  modelSuffix                      = "Schema"
+  useDecimalJs                     = false
+  prismaJsonNullability            = true
+  createInputTypes                 = true
+  createModelTypes                 = true
+  addInputTypeValidation           = true
+  addIncludeType                   = true
+  addSelectType                    = true
+  validateWhereUniqueInput         = true
+  createOptionalDefaultValuesTypes = true
+  createRelationValuesTypes        = true
+  createPartialTypes               = true
+  useDefaultValidators             = true
+  coerceDate                       = false
+  writeNullishInModelTypes         = false
+}

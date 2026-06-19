@@ -1,0 +1,68 @@
+model FileChunk {
+  id               Int           @id @default(autoincrement())
+  /// 上传用户ID
+  userId           String        @map("user_id")
+  /// 文件唯一标识
+  fileUid          String        @map("file_uid") @db.VarChar(191)
+  /// 文件名称
+  fileName         String        @map("file_name") @db.VarChar(191)
+  /// 文件大小
+  fileSize         BigInt        @map("file_size")
+  /// 文件类型
+  fileType         String        @map("file_type") @db.VarChar(191)
+  /// 文件哈希值
+  fileHash         String        @map("file_hash") @db.VarChar(191)
+  /// 文件切片总长度
+  fileChunksLength Int           @map("file_chunks_length")
+  /// 切片索引
+  chunkIndex       Int           @map("chunk_index")
+  /// 切片哈希值
+  chunkHash        String        @map("chunk_hash") @db.VarChar(191)
+  /// 切片大小
+  chunkSize        Int           @map("chunk_size")
+  /// 切片存储路径
+  chunkPath        String        @map("chunk_path") @db.VarChar(191)
+  /// 切片名称
+  chunkName        String        @map("chunk_name") @db.VarChar(191)
+  /// 文件合并ID，可选
+  fileMergeId      Int?          @map("file_merge_id")
+  /// 复用切片ID，可选
+  refChunkId       Int?          @map("ref_chunk_id")
+  isDelete         Boolean       @default(false) @map("is_delete")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  fileMerge        FileMerge? @relation(fields: [fileMergeId], references: [id])
+
+  @@map("file_chunk")
+}
+
+model FileMerge {
+  id            Int             @id @default(autoincrement())
+  /// 用户ID
+  userId        String          @map("user_id")
+  /// 文件唯一标识
+  fileUid       String          @map("file_uid") @db.VarChar(191)
+  /// 文件名称
+  fileName      String          @map("file_name") @db.VarChar(191)
+  /// 文件大小
+  fileSize      BigInt          @map("file_size")
+  /// 文件类型
+  fileType      String          @map("file_type") @db.VarChar(191)
+  /// 文件哈希值
+  fileHash      String          @map("file_hash") @db.VarChar(191)
+  /// 文件存储路径
+  filePath      String          @map("file_path") @db.VarChar(191)
+  /// 合并状态，默认为合并中
+  status        FileMergeStatus @default(MERGE_ING)
+  /// 文件是否已删除，默认为未删除
+  isDelete      Boolean         @default(false) @map("is_delete")
+  /// 引用合并文件的切片ID，可选
+  refFileId     Int?            @map("ref_file_id")
+  /// 合并进度，默认为0
+  mergeProgress Int             @default(0) @map("merge_progress")
+  /// 错误信息，可选
+  errorMsg      String?         @map("error_msg") @db.VarChar(191)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  fileChunks    FileChunk[]
+
+  @@map("file_merge")
+}

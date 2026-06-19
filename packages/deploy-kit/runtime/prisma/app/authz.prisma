@@ -1,0 +1,454 @@
+/// app-api RBAC 通用启用状态。
+enum RbacStatus {
+  /// 启用；参与管理页查询、关系分配和有效权限重建。
+  ENABLE
+  /// 禁用；保留历史配置但不参与新的授权计算。
+  DISABLE
+}
+
+/// app-api RBAC 权限类型；只区分菜单入口和业务动作。
+enum RbacPermissionKind {
+  /// 菜单入口权限；通常用于点亮页面级导航节点。
+  MENU
+  /// 页面按钮、接口、数据范围或其他业务动作权限；普通 RBAC 的默认权限类型。
+  ACTION
+}
+
+/// app-api RBAC 角色源表。
+model RbacRole {
+  id             Int                        @id @default(autoincrement())
+  code           String                     @db.VarChar(191)
+  name           String                     @db.VarChar(191)
+  description    String?                    @db.Text
+  sort           Int                        @default(0)
+  isBuiltin      Boolean                    @default(false) @map("is_builtin")
+  isSuperAdmin   Boolean                    @default(false) @map("is_super_admin")
+  status         RbacStatus              @default(ENABLE)
+  createdBy      String?                    @map("created_by") @db.VarChar(191)
+  updatedBy      String?                    @map("updated_by") @db.VarChar(191)
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime?                  @map("deleted_at")
+  userRoles      RbacUserRole[]
+  groupRoles     RbacUserGroupRole[]
+  roleGrants     RbacRolePermission[]
+  childLinks     RbacRoleInherit[]       @relation("RbacRoleChild")
+  parentLinks    RbacRoleInherit[]       @relation("RbacRoleParent")
+  effectiveUsers RbacEffectiveUserRole[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@index([isSuperAdmin, status])
+  @@map("rbac_role")
+}
+
+/// app-api RBAC 用户组源表。
+model RbacUserGroup {
+  id          Int                      @id @default(autoincrement())
+  code        String                   @db.VarChar(191)
+  name        String                   @db.VarChar(191)
+  description String?                  @db.Text
+  sort        Int                      @default(0)
+  status      RbacStatus            @default(ENABLE)
+  createdBy   String?                  @map("created_by") @db.VarChar(191)
+  updatedBy   String?                  @map("updated_by") @db.VarChar(191)
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime?                @map("deleted_at")
+  members     RbacUserGroupMember[]
+  roles       RbacUserGroupRole[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@map("rbac_user_group")
+}
+
+/// app-api RBAC 权限分组源表。
+model RbacPermissionGroup {
+  id          Int                 @id @default(autoincrement())
+  code        String              @db.VarChar(191)
+  name        String              @db.VarChar(191)
+  description String?             @db.Text
+  sort        Int                 @default(0)
+  status      RbacStatus       @default(ENABLE)
+  createdBy   String?             @map("created_by") @db.VarChar(191)
+  updatedBy   String?             @map("updated_by") @db.VarChar(191)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime?           @map("deleted_at")
+  permissions RbacPermission[]
+  menus       RbacMenu[]
+
+  @@unique([code])
+  @@index([status, sort])
+  @@map("rbac_permission_group")
+}
+
+/// app-api RBAC 权限源表。
+model RbacPermission {
+  id                   Int                              @id @default(autoincrement())
+  code                 String                           @db.VarChar(191)
+  name                 String                           @db.VarChar(191)
+  description          String?                          @db.Text
+  kind                 RbacPermissionKind            @default(ACTION)
+  groupId              Int?                             @map("group_id")
+  sort                 Int                              @default(0)
+  isBuiltin            Boolean                          @default(false) @map("is_builtin")
+  status               RbacStatus                    @default(ENABLE)
+  createdBy            String?                          @map("created_by") @db.VarChar(191)
+  updatedBy            String?                          @map("updated_by") @db.VarChar(191)
+  createdAt            DateTime                         @default(now()) @map("created_at")
+  updatedAt            DateTime                         @default(now()) @updatedAt @map("updated_at")
+  deletedAt            DateTime?                        @map("deleted_at")
+  roleGrants           RbacRolePermission[]
+  effectivePermissions RbacEffectiveUserPermission[]
+  requiredByMenu       RbacMenu?
+  group                RbacPermissionGroup?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@unique([code])
+  @@index([kind, status, sort])
+  @@index([groupId, sort])
+  @@map("rbac_permission")
+}
+
+/// app-api RBAC 菜单源表。
+model RbacMenu {
+  id                     Int                      @id @default(autoincrement())
+  pid                    Int?
+  description            String?                  @db.VarChar(191)
+  title                  String                   @db.VarChar(191)
+  componentPath          String?                  @map("component_path") @db.VarChar(191)
+  type                   MenuTypeEnum
+  groupId                Int?                     @map("group_id")
+  path                   String?                  @db.VarChar(191)
+  icon                   String?                  @db.VarChar(191)
+  order                  Int?
+  layout                 MenuLayoutTypeEnum       @default(LAYOUT_SIDE)
+  pageType               PageTypeEnum             @default(PAGE) @map("page_type")
+  isResident             Boolean                  @default(false) @map("is_resident")
+  isCache                Boolean                  @default(false) @map("is_cache")
+  isMenuVisible          Boolean                  @default(true) @map("is_menu_visible")
+  status                 MenuStatusEnum           @default(ENABLE)
+  showChildren           Boolean                  @default(true) @map("show_children")
+  requiredPermissionCode String                   @map("required_permission_code") @db.VarChar(191)
+  componentName          String?                  @map("component_name") @db.VarChar(191)
+  isTabVisible           Boolean                  @default(true) @map("is_tab_visible")
+  createdBy              String?                  @map("created_by") @db.VarChar(191)
+  updatedBy              String?                  @map("updated_by") @db.VarChar(191)
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @default(now()) @updatedAt @map("updated_at")
+  parent                 RbacMenu?             @relation("RbacMenuTree", fields: [pid], references: [id], onDelete: SetNull)
+  children               RbacMenu[]            @relation("RbacMenuTree")
+  requiredPermission     RbacPermission        @relation(fields: [requiredPermissionCode], references: [code], onUpdate: Cascade, onDelete: Restrict)
+  group                  RbacPermissionGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  visibleUsers           RbacUserVisibleMenu[]
+
+  @@unique([requiredPermissionCode])
+  @@index([pid, order])
+  @@index([status, order])
+  @@index([type, status])
+  @@index([groupId, order])
+  @@index([requiredPermissionCode, status])
+  @@map("rbac_menu")
+}
+
+/// app-api RBAC 角色继承关系。
+model RbacRoleInherit {
+  roleId       Int         @map("role_id")
+  parentRoleId Int         @map("parent_role_id")
+  createdBy    String?     @map("created_by") @db.VarChar(191)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  role         RbacRole @relation("RbacRoleChild", fields: [roleId], references: [id], onDelete: Cascade)
+  parentRole   RbacRole @relation("RbacRoleParent", fields: [parentRoleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, parentRoleId])
+  @@index([parentRoleId])
+  @@map("rbac_role_inherit")
+}
+
+/// app-api RBAC 用户直接角色关系。
+model RbacUserRole {
+  userId    String             @map("user_id")
+  roleId    Int                @map("role_id")
+  createdBy String?            @map("created_by") @db.VarChar(191)
+  createdAt DateTime           @default(now()) @map("created_at")
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      RbacRole        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId, userId])
+  @@map("rbac_user_role")
+}
+
+/// app-api RBAC 用户组成员关系。
+model RbacUserGroupMember {
+  userId    String             @map("user_id")
+  groupId   Int                @map("group_id")
+  createdBy String?            @map("created_by") @db.VarChar(191)
+  createdAt DateTime           @default(now()) @map("created_at")
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     RbacUserGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([groupId, userId])
+  @@map("rbac_user_group_member")
+}
+
+/// app-api RBAC 用户组角色关系。
+model RbacUserGroupRole {
+  groupId   Int              @map("group_id")
+  roleId    Int              @map("role_id")
+  createdBy String?          @map("created_by") @db.VarChar(191)
+  createdAt DateTime         @default(now()) @map("created_at")
+  group     RbacUserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  role      RbacRole      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, roleId])
+  @@index([roleId, groupId])
+  @@map("rbac_user_group_role")
+}
+
+/// app-api RBAC 角色权限关系。
+model RbacRolePermission {
+  roleId       Int               @map("role_id")
+  permissionId Int               @map("permission_id")
+  createdBy    String?           @map("created_by") @db.VarChar(191)
+  createdAt    DateTime          @default(now()) @map("created_at")
+  role         RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("rbac_role_permission")
+}
+
+/// app-api RBAC 用户有效角色读模型。
+model RbacEffectiveUserRole {
+  userId    String             @map("user_id")
+  roleId    Int                @map("role_id")
+  version   String?            @db.VarChar(128)
+  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at")
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      RbacRole        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId, userId])
+  @@index([version])
+  @@map("rbac_effective_user_role")
+}
+
+/// app-api RBAC 用户有效权限读模型。
+model RbacEffectiveUserPermission {
+  userId       String             @map("user_id")
+  permissionId Int                @map("permission_id")
+  version      String?            @db.VarChar(128)
+  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
+  user         BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   RbacPermission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@index([permissionId])
+  @@index([version])
+  @@map("rbac_effective_user_permission")
+}
+
+/// app-api RBAC 用户可见菜单读模型。
+model RbacUserVisibleMenu {
+  userId    String             @map("user_id")
+  menuId    Int                @map("menu_id")
+  version   String?            @db.VarChar(128)
+  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at")
+  user      BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menu      RbacMenu        @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@id([userId, menuId])
+  @@index([menuId, userId])
+  @@index([version])
+  @@map("rbac_user_visible_menu")
+}
+
+model AuthzResourceRoleBinding {
+  resourceType String   @map("resource_type") @db.VarChar(64)
+  resourceId   String   @map("resource_id") @db.VarChar(191)
+  roleId       Int      @map("role_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([resourceType, resourceId, roleId])
+  @@index([roleId])
+  @@index([roleId, resourceType, resourceId])
+  @@map("authz_resource_role_binding")
+}
+
+model AuthzResourceMetadata {
+  resourceType         String   @id @map("resource_type") @db.VarChar(64)
+  displayName          String   @map("display_name") @db.VarChar(191)
+  authorizationEnabled Boolean? @map("authorization_enabled")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("authz_resource_metadata")
+}
+
+model AuthzObjectSubjectBinding {
+  resourceType String   @map("resource_type") @db.VarChar(64)
+  resourceId   String   @map("resource_id") @db.VarChar(191)
+  relation     String   @db.VarChar(64)
+  subjectKind  String   @map("subject_kind") @db.VarChar(32)
+  subjectId    String   @map("subject_id") @db.VarChar(191)
+  createdBy    String   @map("created_by") @db.VarChar(191)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([resourceType, resourceId, relation, subjectKind, subjectId])
+  @@index([resourceType, resourceId])
+  @@index([subjectKind, subjectId])
+  @@index([resourceType, subjectKind, subjectId, relation])
+  @@map("authz_object_subject_binding")
+}
+
+model SpiceDbUserGroupMemberProjection {
+  userId    String   @map("user_id") @db.VarChar(191)
+  groupId   Int      @map("group_id")
+  zedToken  String?  @map("zed_token") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([userId, groupId])
+  @@index([groupId])
+  @@map("spicedb_user_group_member_projection")
+}
+
+model SpiceDbUserRoleProjection {
+  userId    String   @map("user_id") @db.VarChar(191)
+  roleId    Int      @map("role_id")
+  zedToken  String?  @map("zed_token") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("spicedb_user_role_projection")
+}
+
+model SpiceDbUserGroupRoleProjection {
+  groupId   Int      @map("group_id")
+  roleId    Int      @map("role_id")
+  zedToken  String?  @map("zed_token") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([groupId, roleId])
+  @@index([roleId])
+  @@map("spicedb_user_group_role_projection")
+}
+
+model SpiceDbMenuRoleProjection {
+  menuId    Int      @map("menu_id")
+  roleId    Int      @map("role_id")
+  relation  String   @db.VarChar(191)
+  zedToken  String?  @map("zed_token") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([menuId, roleId, relation])
+  @@index([roleId])
+  @@map("spicedb_menu_role_projection")
+}
+
+model SpiceDbProjectionEventLog {
+  id               Int       @id @default(autoincrement())
+  topic            String    @db.VarChar(191)
+  partition        Int
+  offset           String    @db.VarChar(191)
+  eventKey         String    @map("event_key") @db.VarChar(255)
+  zedToken         String?   @map("zed_token") @db.Text
+  operation        String?   @db.VarChar(191)
+  status           String    @db.VarChar(32)
+  reason           String?   @db.Text
+  error            String?   @db.Text
+  payload          Json?
+  handledAt        DateTime? @map("handled_at")
+  handledBy        String?   @map("handled_by") @db.VarChar(191)
+  handledReason    String?   @map("handled_reason") @db.Text
+  replayCount      Int       @default(0) @map("replay_count")
+  lastReplayAt     DateTime? @map("last_replay_at")
+  lastReplayBy     String?   @map("last_replay_by") @db.VarChar(191)
+  lastReplayStatus String?   @map("last_replay_status") @db.VarChar(32)
+  lastReplayError  String?   @map("last_replay_error") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([topic, partition, offset])
+  @@index([eventKey])
+  @@index([status, createdAt])
+  @@index([handledAt])
+  @@index([zedToken])
+  @@map("spicedb_projection_event_log")
+}
+
+model SpiceDbSchemaPublication {
+  id                 String   @id @db.VarChar(32)
+  version            Int
+  schemaHash         String   @map("schema_hash") @db.VarChar(64)
+  previousSchemaHash String?  @map("previous_schema_hash") @db.VarChar(64)
+  schemaText         String   @map("schema_text") @db.Text
+  diffText           String   @map("diff_text") @db.Text
+  publishedBy        String   @map("published_by") @db.VarChar(191)
+  publishedAt        DateTime @default(now()) @map("published_at")
+  reason             String   @db.Text
+  status             String   @db.VarChar(32)
+  zedToken           String?  @map("zed_token") @db.Text
+  error              String?  @db.Text
+  rollbackHint       String?  @map("rollback_hint") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([version])
+  @@index([schemaHash])
+  @@index([status, publishedAt])
+  @@map("spicedb_schema_publication")
+}
+
+model SpiceDbProjectionCursor {
+  id              Int       @id @default(autoincrement())
+  topic           String    @db.VarChar(191)
+  partition       Int
+  consumerGroup   String    @map("consumer_group") @db.VarChar(191)
+  lastOffset      String?   @map("last_offset") @db.VarChar(191)
+  lastEventKey    String?   @map("last_event_key") @db.VarChar(255)
+  lastZedToken    String?   @map("last_zed_token") @db.Text
+  lastEventAt     DateTime? @map("last_event_at")
+  lastProcessedAt DateTime? @map("last_processed_at")
+  lag             BigInt    @default(0)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([topic, partition, consumerGroup])
+  @@index([lastProcessedAt])
+  @@map("spicedb_projection_cursor")
+}
+
+model SpiceDbProjectionReconcileRun {
+  id                    String    @id @db.VarChar(32)
+  mode                  String    @db.VarChar(32)
+  triggeredBy           String    @map("triggered_by") @db.VarChar(64)
+  reason                String    @db.Text
+  status                String    @db.VarChar(32)
+  zedToken              String?   @map("zed_token") @db.Text
+  startedAt             DateTime  @default(now()) @map("started_at")
+  finishedAt            DateTime? @map("finished_at")
+  durationMs            Int?      @map("duration_ms")
+  userGroupMembersStats Json?     @map("user_group_members_stats")
+  userRolesStats        Json?     @map("user_roles_stats")
+  userGroupRolesStats   Json?     @map("user_group_roles_stats")
+  menuRolesStats        Json?     @map("menu_roles_stats")
+  totalStats            Json?     @map("total_stats")
+  error                 String?   @db.Text
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status, startedAt])
+  @@index([mode, startedAt])
+  @@map("spicedb_projection_reconcile_run")
+}

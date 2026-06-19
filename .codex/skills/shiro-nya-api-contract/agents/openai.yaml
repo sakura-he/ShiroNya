@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shiro Nya API Contract"
+  short_description: "Rules for Shiro Nya API naming, DTOs, Swagger docs, response shapes, and frontend calls."
+  default_prompt: "Apply the Shiro Nya API contract to design, modify, or review HTTP APIs and DTOs."

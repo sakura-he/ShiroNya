@@ -1,0 +1,401 @@
+name: shiro-nya
+
+services:
+    shiro-nya-postgres:
+        image: postgres:16
+        container_name: shiro-nya-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+            POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+            TZ: ${TZ:-Asia/Shanghai}
+        ports:
+            - '15432:5432'
+        volumes:
+            - shiro-nya-postgres-data:/var/lib/postgresql/data
+            - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+        command: postgres -c config_file=/etc/postgresql/postgresql.conf
+        mem_limit: 256m
+
+    shiro-nya-admin-redis:
+        image: redis:7
+        container_name: shiro-nya-admin-redis
+        restart: unless-stopped
+        environment:
+            REDIS_ACL_USER: ${ADMIN_REDIS_USER:?ADMIN_REDIS_USER is required}
+            REDIS_ACL_PASSWORD: ${ADMIN_REDIS_PASSWORD:?ADMIN_REDIS_PASSWORD is required}
+        ports:
+            - '${ADMIN_REDIS_PORT:-17379}:6379'
+        volumes:
+            - shiro-nya-admin-redis-data:/data
+            - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+        command:
+            - sh
+            - -lc
+            - exec redis-server /usr/local/etc/redis/redis.conf --user "$$REDIS_ACL_USER on >$$REDIS_ACL_PASSWORD ~* +@all"
+        mem_limit: 256m
+
+    shiro-nya-app-redis:
+        image: redis:7
+        container_name: shiro-nya-app-redis
+        restart: unless-stopped
+        environment:
+            REDIS_ACL_USER: ${APP_REDIS_USER:?APP_REDIS_USER is required}
+            REDIS_ACL_PASSWORD: ${APP_REDIS_PASSWORD:?APP_REDIS_PASSWORD is required}
+        ports:
+            - '${APP_REDIS_PORT:-26379}:6379'
+        volumes:
+            - shiro-nya-app-redis-data:/data
+            - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+        command:
+            - sh
+            - -lc
+            - exec redis-server /usr/local/etc/redis/redis.conf --user "$$REDIS_ACL_USER on >$$REDIS_ACL_PASSWORD ~* +@all"
+        mem_limit: 256m
+
+    shiro-nya-mongodb:
+        image: mongo:4.4
+        container_name: shiro-nya-mongodb
+        restart: unless-stopped
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?MONGO_USER is required}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD is required}
+            MONGO_INITDB_DATABASE: ${MONGO_DB:?MONGO_DB is required}
+            TZ: ${TZ:-Asia/Shanghai}
+        ports:
+            - '27017:27017'
+        volumes:
+            - shiro-nya-mongodb-data:/data/db
+            - shiro-nya-mongodb-config-data:/data/configdb
+        mem_limit: 384m
+
+    shiro-nya-redpanda:
+        image: redpandadata/redpanda:v24.3.6
+        container_name: shiro-nya-redpanda
+        restart: unless-stopped
+        command:
+            - redpanda
+            - start
+            - --overprovisioned
+            - --smp
+            - '1'
+            - --memory
+            - 512M
+            - --reserve-memory
+            - 0M
+            - --node-id
+            - '0'
+            - --check=false
+            - --kafka-addr
+            - PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+            - --advertise-kafka-addr
+            - PLAINTEXT://shiro-nya-redpanda:9092,OUTSIDE://${REDPANDA_OUTSIDE_HOST:-127.0.0.1}:19092
+        ports:
+            - '19092:19092'
+            - '19644:9644'
+        volumes:
+            - shiro-nya-redpanda-data:/var/lib/redpanda/data
+        mem_limit: 600m
+
+    shiro-nya-redpanda-console:
+        image: redpandadata/console:v2.8.3
+        container_name: shiro-nya-redpanda-console
+        restart: unless-stopped
+        ports:
+            - '18080:8080'
+        environment:
+            KAFKA_BROKERS: shiro-nya-redpanda:9092
+        depends_on:
+            - shiro-nya-redpanda
+        mem_limit: 128m
+
+    admin-api-spicedb:
+        image: ghcr.io/authzed/spicedb:v1.51.0
+        container_name: admin-api-spicedb
+        restart: unless-stopped
+        command:
+            - serve
+            - --datastore-engine=postgres
+            - --datastore-conn-uri=postgres://${SPICEDB_POSTGRES_USER:?SPICEDB_POSTGRES_USER is required}:${SPICEDB_POSTGRES_PASSWORD:?SPICEDB_POSTGRES_PASSWORD is required}@shiro-nya-postgres:5432/${SPICEDB_POSTGRES_DB:?SPICEDB_POSTGRES_DB is required}?sslmode=disable
+            - --grpc-preshared-key=${SPICEDB_GRPC_PRESHARED_KEY:?SPICEDB_GRPC_PRESHARED_KEY is required}
+            - --grpc-addr=0.0.0.0:50051
+            - --http-enabled=true
+            - --http-addr=0.0.0.0:8443
+            - --dashboard-addr=0.0.0.0:8080
+            - --metrics-enabled=true
+            - --metrics-addr=0.0.0.0:9090
+            - --log-level=warn
+            - --skip-release-check=true
+        ports:
+            - '50052:50051'
+            - '18082:8080'
+            - '18444:8443'
+            - '19091:9090'
+        depends_on:
+            - shiro-nya-postgres
+        mem_limit: 256m
+
+    app-api-cerbos:
+        image: ghcr.io/cerbos/cerbos:latest
+        container_name: app-api-cerbos
+        restart: unless-stopped
+        healthcheck:
+            disable: true
+        command:
+            - server
+            - --config=/conf/.cerbos.yaml
+        environment:
+            CERBOS_NO_TELEMETRY: '1'
+        ports:
+            - '127.0.0.1:3592:3592'
+        expose:
+            - '3593'
+        volumes:
+            - ./config/app-api-cerbos/cerbos.yaml:/conf/.cerbos.yaml:ro
+            - ./config/app-api-cerbos/tls:/certs:ro
+            - ./config/app-api-cerbos/policies:/policies:ro
+            - app-api-cerbos-data:/data
+            - app-api-cerbos-audit-logs:/audit_logs_json
+        tmpfs:
+            - /.cache
+            - /tmp
+
+    app-api-cerbos-grpc-proxy:
+        image: nginx:1.27-alpine
+        container_name: app-api-cerbos-grpc-proxy
+        restart: unless-stopped
+        depends_on:
+            - app-api-cerbos
+        ports:
+            - '3593:3593'
+        volumes:
+            - ./config/app-api-cerbos-grpc-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./config/app-api-cerbos/tls:/certs:ro
+
+    admin-api-cerbos:
+        image: ghcr.io/cerbos/cerbos:latest
+        container_name: admin-api-cerbos
+        restart: unless-stopped
+        healthcheck:
+            disable: true
+        command:
+            - server
+            - --config=/conf/.cerbos.yaml
+        environment:
+            CERBOS_NO_TELEMETRY: '1'
+        ports:
+            - '127.0.0.1:3692:3692'
+        expose:
+            - '3693'
+        volumes:
+            - ./config/admin-api-cerbos/cerbos.yaml:/conf/.cerbos.yaml:ro
+            - ./config/admin-api-cerbos/tls:/certs:ro
+            - ./config/admin-api-cerbos/policies:/policies:ro
+            - admin-api-cerbos-data:/data
+        tmpfs:
+            - /.cache
+            - /tmp
+
+    admin-api-cerbos-grpc-proxy:
+        image: nginx:1.27-alpine
+        container_name: admin-api-cerbos-grpc-proxy
+        restart: unless-stopped
+        depends_on:
+            - admin-api-cerbos
+        ports:
+            - '3693:3693'
+        volumes:
+            - ./config/admin-api-cerbos-grpc-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./config/admin-api-cerbos/tls:/certs:ro
+
+    loki:
+        image: grafana/loki:3.4.2
+        container_name: loki
+        restart: unless-stopped
+        ports:
+            - '3101:3100'
+        volumes:
+            - ./config/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+            - ./config/loki/tls:/etc/loki/certs:ro
+            - loki-data:/loki
+        command: -config.file=/etc/loki/local-config.yaml
+        mem_limit: 256m
+
+    promtail:
+        image: grafana/promtail:3.4.2
+        container_name: promtail
+        restart: unless-stopped
+        depends_on:
+            - loki
+        volumes:
+            - ./config/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+            - promtail-positions:/positions
+            - ./config/loki/tls:/etc/promtail/certs:ro
+            - app-api-cerbos-audit-logs:/audit_logs:ro
+            - /var/log/shiro-nya/loki:/shiro-nya_logs:ro
+        command: -config.file=/etc/promtail/config.yaml
+        mem_limit: 128m
+
+    tempo:
+        image: grafana/tempo:latest
+        container_name: tempo
+        restart: unless-stopped
+        user: '0'
+        command:
+            - -config.file=/etc/tempo.yaml
+        ports:
+            - '4317:4317'
+            - '4318:4318'
+        volumes:
+            - ./config/tempo/tempo-config.yaml:/etc/tempo.yaml:ro
+            - tempo-data:/tmp/tempo
+        mem_limit: 256m
+
+    grafana:
+        image: grafana/grafana:13.0.1-security-01
+        container_name: grafana
+        restart: unless-stopped
+        env_file:
+            - ${GRAFANA_ENV_FILE:-/opt/grafana-loki/.env}
+        ports:
+            - '3100:3000'
+        environment:
+            GF_SECURITY_ADMIN_USER: admin
+            GF_USERS_ALLOW_SIGN_UP: 'false'
+            GF_EXPLORE_ENABLED: 'true'
+            GF_SNAPSHOTS_ENABLED: 'true'
+            GF_SNAPSHOTS_EXTERNAL_ENABLED: 'false'
+            GF_UNIFIED_ALERTING_ENABLED: 'true'
+            GF_ALERTING_ENABLED: 'false'
+            GF_LOG_MODE: console
+            GF_LOG_LEVEL: info
+            GF_USERS_DEFAULT_THEME: dark
+            GF_USERS_DEFAULT_LANGUAGE: zh-Hans
+            GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 10s
+            GF_DATE_FORMATS_DEFAULT_TIMEZONE: Asia/Shanghai
+            GF_PLUGINS_PREINSTALL: grafana-clock-panel
+        volumes:
+            - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+            - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+            - ./config/loki/tls:/etc/grafana/certs:ro
+            - grafana-data:/var/lib/grafana
+        depends_on:
+            - loki
+            - tempo
+        mem_limit: 256m
+
+    admin-api:
+        image: ghcr.io/sakura-he/admin-api:spicedb
+        container_name: admin-api
+        restart: unless-stopped
+        network_mode: host
+        pull_policy: always
+        environment:
+            NODE_ENV: production
+            LOKI_LOG_DIR: /var/log/shiro-nya/loki
+            CERBOS_NO_TELEMETRY: '1'
+        volumes:
+            - /opt/shiro-nya/admin-api/static:/app/static
+            - /opt/shiro-nya/admin-api/uploads:/app/uploads
+            - /opt/shiro-nya/admin-api/chunks:/app/chunks
+            - /opt/shiro-nya/admin-api/merge:/app/merge
+            - /opt/shiro-nya/admin-api/logs:/app/logs
+            - /var/log/shiro-nya/loki:/var/log/shiro-nya/loki
+            - ./config/app-user-admin-grpc/tls:/app/certs/app-user-admin-grpc:ro
+            - ./config/app-api-cerbos/tls:/app/certs/app-cerbos-tls:ro
+            - ./config/admin-api-cerbos/tls:/app/certs/cerbos-admin/tls:ro
+        mem_limit: 256m
+        security_opt:
+            - no-new-privileges:true
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - node -e "fetch('http://127.0.0.1:57300/admin/api/auth/get-session').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+            interval: 30s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+
+    app-api:
+        image: ghcr.io/sakura-he/app-api:spicedb
+        container_name: app-api
+        restart: unless-stopped
+        network_mode: host
+        pull_policy: always
+        environment:
+            NODE_ENV: production
+            OTEL_SERVICE_NAME: app-api
+            LOKI_LOG_DIR: /var/log/shiro-nya/loki
+            CERBOS_NO_TELEMETRY: '1'
+        volumes:
+            - /opt/shiro-nya/app-api/static:/app/static
+            - /opt/shiro-nya/app-api/uploads:/app/uploads
+            - /opt/shiro-nya/app-api/chunks:/app/chunks
+            - /opt/shiro-nya/app-api/merge:/app/merge
+            - /opt/shiro-nya/app-api/logs:/app/logs
+            - /var/log/shiro-nya/loki:/var/log/shiro-nya/loki
+            - ./config/app-user-admin-grpc/tls:/app/certs/app-user-admin-grpc:ro
+            - ./config/app-api-cerbos/tls:/app/certs/app-cerbos-tls:ro
+            - ./config/admin-api-cerbos/tls:/app/certs/cerbos-admin/tls:ro
+        security_opt:
+            - no-new-privileges:true
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - node -e "fetch('http://127.0.0.1:3001/app/api/auth/get-session').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+            interval: 30s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+
+    admin-web:
+        image: ghcr.io/sakura-he/admin-web:spicedb
+        container_name: admin-web
+        restart: unless-stopped
+        pull_policy: always
+        ports:
+            - '57301:80'
+        mem_limit: 128m
+        security_opt:
+            - no-new-privileges:true
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+            interval: 30s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+networks:
+    default:
+        name: shiro-nya
+
+volumes:
+    shiro-nya-postgres-data:
+        name: shiro-nya-postgres-data
+    shiro-nya-admin-redis-data:
+        name: shiro-nya-admin-redis-data
+    shiro-nya-app-redis-data:
+        name: shiro-nya-app-redis-data
+    shiro-nya-mongodb-data:
+        name: shiro-nya-mongodb-data
+    shiro-nya-mongodb-config-data:
+        name: shiro-nya-mongodb-config-data
+    shiro-nya-redpanda-data:
+        name: shiro-nya-redpanda-data
+    app-api-cerbos-data:
+        name: app-api-cerbos-data
+    app-api-cerbos-audit-logs:
+        name: app-api-cerbos-audit-logs
+    admin-api-cerbos-data:
+        name: admin-api-cerbos-data
+    loki-data:
+        name: loki-data
+    promtail-positions:
+        name: promtail-positions
+    grafana-data:
+        name: grafana-data
+    tempo-data:
+        name: tempo-data

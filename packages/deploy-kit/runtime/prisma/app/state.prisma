@@ -1,0 +1,26 @@
+/// App 全局状态版本（单行：id=1）
+model StateVersion {
+  /// 版本记录ID，自动递增
+  id        Int                 @id @default(autoincrement())
+  /// 版本名称（例如 roleName 或 global）
+  name      String
+  /// 版本类型（role/menu）
+  type      StateVersionType
+  /// 版本号（业务侧使用 ULID 写入）
+  version   String
+  /// 创建时间
+  createdAt DateTime            @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  @@unique([type, name])
+  @@map("state_version")
+}
+
+/// App 版本类型枚举
+enum StateVersionType {
+  /// 角色版本
+  role
+  /// 菜单版本
+  menu
+}

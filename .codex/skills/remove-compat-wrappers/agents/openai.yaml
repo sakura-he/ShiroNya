@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remove Compat Wrappers"
+  short_description: "Delete obsolete wrapper and compat layers"
+  default_prompt: "Use $remove-compat-wrappers to refactor this code path so current business interfaces are supported directly."

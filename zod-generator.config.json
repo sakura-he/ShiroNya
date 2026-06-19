@@ -1,0 +1,20 @@
+{
+    "mode": "full",
+    "pureModels": true,
+    "jsonSchemaCompatible": true,
+    "jsonSchemaOptions": {
+        "dateTimeFormat": "isoString",
+        "bigIntFormat": "string",
+        "bytesFormat": "base64String",
+        "conversionOptions": {
+            "unrepresentable": "any",
+            "cycles": "throw",
+            "reused": "inline"
+        }
+    },
+    "variants": {
+        "pure": { "enabled": true },
+        "input": { "enabled": true },
+        "result": { "enabled": true }
+    }
+}

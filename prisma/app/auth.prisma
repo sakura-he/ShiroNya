@@ -1,0 +1,136 @@
+model BetterAuthUser {
+  id                       String                           @id
+  name                     String
+  email                    String
+  emailVerified            Boolean                          @default(false)
+  image                    String?
+  /// Better Auth Admin 插件角色字段（逗号分隔）
+  role                     String?                          @default("user")
+  /// Better Auth Admin 插件封禁标记
+  banned                   Boolean?                         @default(false)
+  /// Better Auth Admin 插件封禁原因
+  banReason                String?
+  /// Better Auth Admin 插件封禁过期时间
+  banExpires               DateTime?
+  /// 软删除时间
+  deletedAt                DateTime?
+  /// 软删除原因
+  deleteReason             String?
+  createdAt                DateTime                         @default(now())
+  updatedAt                DateTime                         @updatedAt
+  phoneNumber              String?
+  phoneNumberVerified      Boolean?
+  username                 String?                          @unique
+  displayUsername          String?
+  apiKeys                  BetterAuthApiKey[]           @relation("BetterAuthApiKeys")
+  sessions                 BetterAuthSession[]
+  accounts                 BetterAuthAccount[]
+  rbacUserRoles            RbacUserRole[]
+  rbacGroupMembers         RbacUserGroupMember[]
+  rbacEffectiveRoles       RbacEffectiveUserRole[]
+  rbacEffectivePermissions RbacEffectiveUserPermission[]
+  rbacVisibleMenus         RbacUserVisibleMenu[]
+  profile                  BetterAuthUserProfile?
+
+  @@unique([email])
+  @@unique([phoneNumber])
+  @@map("better_auth_user")
+}
+
+/// BetterAuth 用户资料表
+model BetterAuthUserProfile {
+  id          Int                @id @default(autoincrement())
+  userId      String             @unique @map("user_id")
+  nickname    String?
+  avatar      String?
+  gender      Int                @default(0)
+  level       Int                @default(1)
+  exp         Int                @default(0)
+  remark      String?
+  createdBy   String?            @map("created_by")
+  lastLoginAt DateTime?          @map("last_login_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  user        BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("better_auth_user_profile")
+}
+
+model BetterAuthSession {
+  id             String             @id
+  expiresAt      DateTime
+  token          String
+  /// Better Auth Admin 插件伪装来源用户ID
+  impersonatedBy String?            @map("impersonated_by")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("better_auth_session")
+}
+
+model BetterAuthAccount {
+  id                    String             @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  BetterAuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId])
+  @@map("better_auth_account")
+}
+
+model BetterAuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("better_auth_verification")
+}
+
+model BetterAuthApiKey {
+  id                  String              @id
+  name                String?
+  start               String?
+  prefix              String?
+  key                 String              @unique
+  referenceId         String              @map("reference_id")
+  configId            String              @default("default") @map("config_id")
+  refillInterval      Int?                @map("refill_interval")
+  refillAmount        Int?                @map("refill_amount")
+  lastRefillAt        DateTime?           @map("last_refill_at")
+  enabled             Boolean             @default(true)
+  rateLimitEnabled    Boolean             @default(true) @map("rate_limit_enabled")
+  rateLimitTimeWindow Int                 @default(86400000) @map("rate_limit_time_window")
+  rateLimitMax        Int                 @default(10) @map("rate_limit_max")
+  requestCount        Int                 @default(0) @map("request_count")
+  remaining           Int?
+  lastRequest         DateTime?           @map("last_request")
+  expiresAt           DateTime?           @map("expires_at")
+  permissions         String?
+  metadata            String?
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  user                BetterAuthUser? @relation("BetterAuthApiKeys", fields: [referenceId], references: [id], onDelete: Cascade)
+
+  @@index([referenceId])
+  @@map("better_auth_api_key")
+}

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "lib": ["ES2022"],
+    "paths": {
+      "@spicedb-toolkit/core": ["./core/src/index.ts"],
+      "@spicedb-toolkit/core/*": ["./core/src/*"],
+      "@spicedb-toolkit/nestjs": ["./nestjs/src/index.ts"],
+      "@spicedb-toolkit/nestjs/*": ["./nestjs/src/*"],
+      "@spicedb-toolkit/cli": ["./cli/src/index.ts"],
+      "@spicedb-toolkit/cli/*": ["./cli/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

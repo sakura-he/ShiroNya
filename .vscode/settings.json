@@ -1,0 +1,26 @@
+{
+    "commentTranslate.browse.mode": "contrast",
+    "cSpell.words": [
+        "ShiroNya",
+        "Shiro",
+        "Uncatch"
+    ],
+    "[yaml]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+    },
+    "compile-hero.disable-compile-files-on-did-save-code": true,
+    "turbo-ai-rules.sources": [
+        {
+            "id": "ai-rules",
+            "name": "ygqygq2's AI Rules",
+            "gitUrl": "https://github.com/ygqygq2/ai-rules.git",
+            "branch": "main",
+            "enabled": true,
+            "authentication": {
+                "type": "none"
+            }
+        }
+    ]
+}

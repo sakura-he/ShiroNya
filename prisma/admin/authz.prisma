@@ -1,0 +1,331 @@
+model SpiceDbUserGroupMemberProjection {
+  /// 后台用户 ID，对应 Better Auth 用户主键
+  userId    String   @map("user_id") @db.VarChar(191)
+  /// 用户组 ID，对应 shiro_user_group.id
+  groupId   Int      @map("group_id")
+  /// 最后同步到当前关系的 SpiceDB ZedToken
+  zedToken  String?  @map("zed_token") @db.Text
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([userId, groupId])
+  @@index([groupId])
+  @@map("spicedb_user_group_member_projection")
+}
+
+model SpiceDbUserRoleProjection {
+  /// 后台用户 ID，对应 Better Auth 用户主键
+  userId    String   @map("user_id") @db.VarChar(191)
+  /// 角色 ID，对应 shiro_role.id
+  roleId    Int      @map("role_id")
+  /// 最后同步到当前关系的 SpiceDB ZedToken
+  zedToken  String?  @map("zed_token") @db.Text
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("spicedb_user_role_projection")
+}
+
+model SpiceDbUserGroupRoleProjection {
+  /// 用户组 ID，对应 shiro_user_group.id
+  groupId   Int      @map("group_id")
+  /// 角色 ID，对应 shiro_role.id
+  roleId    Int      @map("role_id")
+  /// 最后同步到当前关系的 SpiceDB ZedToken
+  zedToken  String?  @map("zed_token") @db.Text
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([groupId, roleId])
+  @@index([roleId])
+  @@map("spicedb_user_group_role_projection")
+}
+
+model SpiceDbMenuRoleProjection {
+  /// 菜单 ID，对应 shiro_menu.id
+  menuId    Int      @map("menu_id")
+  /// 角色 ID，对应 shiro_role.id
+  roleId    Int      @map("role_id")
+  /// SpiceDB 菜单关系名，例如 viewer 或 manager
+  relation  String   @db.VarChar(191)
+  /// 最后同步到当前关系的 SpiceDB ZedToken
+  zedToken  String?  @map("zed_token") @db.Text
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([menuId, roleId, relation])
+  @@index([roleId])
+  @@map("spicedb_menu_role_projection")
+}
+
+model AuthzResourceRoleBinding {
+  /// AuthZ 资源类型，目前用于核心 manager 模块关系
+  resourceType String   @map("resource_type") @db.VarChar(64)
+  /// AuthZ 关系名，例如 viewer、creator、updater、deleter、runner、manager
+  resourceId   String   @map("resource_id") @db.VarChar(191)
+  /// 角色 ID，对应 shiro_role.id
+  roleId       Int      @map("role_id")
+  /// 创建时间
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([resourceType, resourceId, roleId])
+  @@index([roleId])
+  @@index([roleId, resourceType, resourceId])
+  @@map("authz_resource_role_binding")
+}
+
+model AuthzResourceMetadata {
+  /// SpiceDB 实体类型名，直接使用 schema definition name 作为主键
+  resourceType         String   @id @map("resource_type") @db.VarChar(64)
+  /// 前端展示名，可由权限管理页重命名
+  displayName          String   @map("display_name") @db.VarChar(191)
+  /// 是否在权限管理页启用角色授权配置；为空时由后端按 schema 结构补齐初始值
+  authorizationEnabled Boolean? @map("authorization_enabled")
+  /// 创建时间
+  createdAt            DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("authz_resource_metadata")
+}
+
+model AuthzObjectSubjectBinding {
+  /// SpiceDB 对象资源类型，例如 admin_user、role、menu、user_group、task
+  resourceType String   @map("resource_type") @db.VarChar(64)
+  /// SpiceDB 对象资源 ID，直接使用业务对象主键字符串
+  resourceId   String   @map("resource_id") @db.VarChar(191)
+  /// 对象例外授权关系名，例如 updater、runner、role_assigner
+  relation     String   @db.VarChar(64)
+  /// 授权主体类型，只允许 user 或 role_assigned，由业务服务显式校验
+  subjectKind  String   @map("subject_kind") @db.VarChar(32)
+  /// 授权主体 ID，user 时为后台用户 ID，role_assigned 时为角色 ID 字符串
+  subjectId    String   @map("subject_id") @db.VarChar(191)
+  /// 创建人后台用户 ID
+  createdBy    String   @map("created_by") @db.VarChar(191)
+  /// 创建时间
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([resourceType, resourceId, relation, subjectKind, subjectId])
+  @@index([resourceType, resourceId])
+  @@index([subjectKind, subjectId])
+  @@index([resourceType, subjectKind, subjectId, relation])
+  @@map("authz_object_subject_binding")
+}
+
+model SpiceDbProjectionEventLog {
+  /// 事件日志 ID，自动递增
+  id               Int       @id @default(autoincrement())
+  /// Kafka topic 名称
+  topic            String    @db.VarChar(191)
+  /// Kafka partition 编号
+  partition        Int
+  /// Kafka offset，使用字符串避免大 offset 精度损失
+  offset           String    @db.VarChar(191)
+  /// 事件业务 key，用于运维排查重复事件
+  eventKey         String    @map("event_key") @db.VarChar(255)
+  /// SpiceDB Watch ZedToken
+  zedToken         String?   @map("zed_token") @db.Text
+  /// SpiceDB operation
+  operation        String?   @db.VarChar(191)
+  /// 处理状态：applied / ignored / dlq / failed
+  status           String    @db.VarChar(32)
+  /// 状态原因
+  reason           String?   @db.Text
+  /// 失败错误详情
+  error            String?   @db.Text
+  /// 原始事件 payload
+  payload          Json?
+  /// 人工标记处理时间
+  handledAt        DateTime? @map("handled_at")
+  /// 人工标记处理人
+  handledBy        String?   @map("handled_by") @db.VarChar(191)
+  /// 人工标记处理原因
+  handledReason    String?   @map("handled_reason") @db.Text
+  /// 回放次数
+  replayCount      Int       @default(0) @map("replay_count")
+  /// 最近一次回放时间
+  lastReplayAt     DateTime? @map("last_replay_at")
+  /// 最近一次回放人
+  lastReplayBy     String?   @map("last_replay_by") @db.VarChar(191)
+  /// 最近一次回放状态
+  lastReplayStatus String?   @map("last_replay_status") @db.VarChar(32)
+  /// 最近一次回放错误详情
+  lastReplayError  String?   @map("last_replay_error") @db.Text
+  /// 创建时间
+  createdAt        DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([topic, partition, offset])
+  @@index([eventKey])
+  @@index([status, createdAt])
+  @@index([handledAt])
+  @@index([zedToken])
+  @@map("spicedb_projection_event_log")
+}
+
+model SpiceDbSchemaPublication {
+  /// 发布记录 ID，使用 ULID 便于排查
+  id                 String   @id @db.VarChar(32)
+  /// schema 版本号，按成功发布顺序递增
+  version            Int
+  /// 本次 schema SHA256
+  schemaHash         String   @map("schema_hash") @db.VarChar(64)
+  /// 上一个成功版本 schema SHA256
+  previousSchemaHash String?  @map("previous_schema_hash") @db.VarChar(64)
+  /// 发布的 schema 文本
+  schemaText         String   @map("schema_text") @db.Text
+  /// 发布前 diff 文本
+  diffText           String   @map("diff_text") @db.Text
+  /// 发布人用户 ID
+  publishedBy        String   @map("published_by") @db.VarChar(191)
+  /// 发布时间
+  publishedAt        DateTime @default(now()) @map("published_at")
+  /// 发布原因
+  reason             String   @db.Text
+  /// 发布状态：succeeded / failed
+  status             String   @db.VarChar(32)
+  /// SpiceDB 写入返回的 ZedToken
+  zedToken           String?  @map("zed_token") @db.Text
+  /// 发布失败错误详情
+  error              String?  @db.Text
+  /// 失败时的回滚提示
+  rollbackHint       String?  @map("rollback_hint") @db.Text
+  /// 创建时间
+  createdAt          DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([version])
+  @@index([schemaHash])
+  @@index([status, publishedAt])
+  @@map("spicedb_schema_publication")
+}
+
+model SpiceDbProjectionCursor {
+  /// 游标 ID，自动递增
+  id              Int       @id @default(autoincrement())
+  /// Kafka topic 名称
+  topic           String    @db.VarChar(191)
+  /// Kafka partition 编号
+  partition       Int
+  /// Kafka consumer group
+  consumerGroup   String    @map("consumer_group") @db.VarChar(191)
+  /// 最后成功提交的 Kafka offset
+  lastOffset      String?   @map("last_offset") @db.VarChar(191)
+  /// 最后成功处理事件 key
+  lastEventKey    String?   @map("last_event_key") @db.VarChar(255)
+  /// 最后成功处理的 SpiceDB ZedToken
+  lastZedToken    String?   @map("last_zed_token") @db.Text
+  /// 最后成功处理的事件时间
+  lastEventAt     DateTime? @map("last_event_at")
+  /// 最后成功处理时间
+  lastProcessedAt DateTime? @map("last_processed_at")
+  /// Kafka 当前估算 lag
+  lag             BigInt    @default(0)
+  /// 创建时间
+  createdAt       DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([topic, partition, consumerGroup])
+  @@index([lastProcessedAt])
+  @@map("spicedb_projection_cursor")
+}
+
+model SpiceDbProjectionReconcileRun {
+  /// 对账任务 ID，使用 ULID 便于日志关联
+  id                    String    @id @db.VarChar(32)
+  /// 对账模式：dry_run / apply / rebuild
+  mode                  String    @db.VarChar(32)
+  /// 触发来源：manual / scheduler / spicedb-data
+  triggeredBy           String    @map("triggered_by") @db.VarChar(64)
+  /// 运维原因
+  reason                String    @db.Text
+  /// 执行状态：running / succeeded / failed
+  status                String    @db.VarChar(32)
+  /// 对账基准 SpiceDB ZedToken
+  zedToken              String?   @map("zed_token") @db.Text
+  /// 开始时间
+  startedAt             DateTime  @default(now()) @map("started_at")
+  /// 结束时间
+  finishedAt            DateTime? @map("finished_at")
+  /// 执行耗时毫秒
+  durationMs            Int?      @map("duration_ms")
+  /// 用户组成员投影统计
+  userGroupMembersStats Json?     @map("user_group_members_stats")
+  /// 用户直接角色投影统计
+  userRolesStats        Json?     @map("user_roles_stats")
+  /// 用户组继承角色投影统计
+  userGroupRolesStats   Json?     @map("user_group_roles_stats")
+  /// 菜单角色投影统计
+  menuRolesStats        Json?     @map("menu_roles_stats")
+  /// 总体统计
+  totalStats            Json?     @map("total_stats")
+  /// 失败错误详情
+  error                 String?   @db.Text
+  /// 创建时间
+  createdAt             DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status, startedAt])
+  @@index([mode, startedAt])
+  @@map("spicedb_projection_reconcile_run")
+}
+
+enum RoleStatusEnum {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}
+
+enum MenuStatusEnum {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}
+
+enum PageTypeEnum {
+  /// 页面
+  PAGE
+  /// 链接
+  LINK
+  /// iframe
+  IFRAME
+}
+
+enum MenuTypeEnum {
+  Catalog
+  Page
+  Button
+}
+
+enum MenuLayoutTypeEnum {
+  LAYOUT_DEFAULT
+  LAYOUT_SIDE
+  LAYOUT_TOP
+}
+
+enum UserGroupStatusEnum {
+  /// 启用
+  ENABLE
+  /// 禁用
+  DISABLE
+}

@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api App 角色管理接口策略
+# 数据库语义：system.app.role.index 仅分配给 super_admin，因此 admin_app_role 仅 super_admin 可访问
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_app_role
+  version: default
+  rules:
+    - actions: ["list", "all", "detail", "create", "update", "delete", "menus", "assign_menus", "users", "assign_users"]
+      roles: ["super_admin"]
+      effect: EFFECT_ALLOW

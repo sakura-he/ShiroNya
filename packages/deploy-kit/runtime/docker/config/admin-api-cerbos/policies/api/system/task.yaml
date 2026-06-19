@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 系统任务接口策略
+# 数据库语义：拥有 system.task.index 页面权限的角色，可访问 admin_system_task 资源整组接口
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_system_task
+  version: default
+  rules:
+    - actions: ["get_task_status_option", "get_task_strategy_option", "create_task", "update_task", "delete_task", "update_task_status", "get_task_list", "get_all_job_status", "get_job_status", "run_task"]
+      roles: ["super_admin", "test"]
+      effect: EFFECT_ALLOW

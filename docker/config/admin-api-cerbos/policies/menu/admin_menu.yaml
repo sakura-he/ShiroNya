@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# Shiro Nya Admin 菜单可见性策略
+# 资源类型：admin_menu，resource ID 使用菜单的 permission 字段值（点分格式）
+# 用于 Admin 端 AccountService.getAccountMenus() / getAccountPermissions() 的 Cerbos 批量检查
+#
+# 角色说明：
+#   super_admin — 超级管理员，拥有所有菜单权限（含 demo.permission.admin 专属按钮，未在 shiro_role_menu 中配置，由无条件规则覆盖）
+#   test        — 测试角色，系统管理 + DEMO 菜单
+#   user        — 用户组，文章资讯 + DEMO 菜单
+#
+# 权限标识来源：shiro_menu.permission 字段，含 Page/Catalog 及 Button 类型
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: admin_menu
+  version: default
+  rules:
+    # ── super_admin 角色：拥有所有菜单的访问权限（最高权限，无需条件）──
+    - actions: ["view"]
+      roles: ["super_admin"]
+      effect: EFFECT_ALLOW
+
+    # ── test 角色：系统管理 + DEMO 菜单（含对应按钮权限）──
+    - actions: ["view"]
+      roles: ["test"]
+      effect: EFFECT_ALLOW
+      condition:
+        match:
+          expr: >-
+            request.resource.id in [
+              "system.index.index",
+              "system.role.index",
+              "system.menu.index",
+              "system.task.index",
+              "system.user.index",
+              "system.menu.export",
+              "demo.index.index",
+              "demo.permission.index",
+              "demo.permission.test",
+              "demo.permission.user_test"
+            ]
+
+    # ── user 角色（用户组）：文章资讯 + DEMO 菜单（含对应按钮权限）──
+    - actions: ["view"]
+      roles: ["user"]
+      effect: EFFECT_ALLOW
+      condition:
+        match:
+          expr: >-
+            request.resource.id in [
+              "article.index.index",
+              "article.lists_index.index",
+              "article.lists_edit.index",
+              "demo.index.index",
+              "demo.permission.index",
+              "demo.permission.user",
+              "demo.permission.age17",
+              "demo.permission.user_test"
+            ]

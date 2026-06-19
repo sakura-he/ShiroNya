@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://api.cerbos.dev/latest/cerbos/policy/v1/Policy.schema.json
+# admin-api 账户接口策略
+# 来源：apps/admin-api AccountController 的 @CerbosPolicy 定义
+# 数据库语义：后台现有全部角色都会访问账户信息、菜单、权限与改密接口
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+    resource: account
+    version: default
+    rules:
+        - actions: ["change_password", "permissions", "info", "menus"]
+          roles: ["user"]
+          effect: EFFECT_ALLOW

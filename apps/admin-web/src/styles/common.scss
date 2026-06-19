@@ -1,0 +1,14 @@
+// 存放公共的sass变量
+$screen-size: (
+    "sm": "576px",
+    "md": "768px",
+    // 平板 侧边+手机布局
+    // => @media (min-width: 768px) { ... }
+    "lg": "992px",
+    // 收起侧边+电脑布局
+    // => @media (min-width: 1024px) { ... }
+    "xl": "1200px",
+    // 电脑布局
+    // => @media (min-width: 1280px) { ... }
+    "2xl": "1600px",
+);

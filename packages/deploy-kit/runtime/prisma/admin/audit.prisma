@@ -1,0 +1,76 @@
+/// 审计日志表（存数据库）
+model AuditLog {
+  /// 日志ID（ULID，应用层生成）
+  id              String         @id @db.VarChar(26)
+  /// 应用标识
+  app             String         @db.VarChar(64)
+  /// 模块标识
+  module          String         @db.VarChar(128)
+  /// 动作标识
+  action          String         @db.VarChar(128)
+  /// 审计摘要
+  summary         String         @db.VarChar(255)
+  /// 资源类型
+  resourceType    String         @map("resource_type") @db.VarChar(128)
+  /// 资源ID
+  resourceId      String?        @map("resource_id") @db.VarChar(191)
+  /// 请求ID
+  requestId       String?        @map("request_id") @db.VarChar(191)
+  /// 操作者ID
+  actorId         String?        @map("actor_id") @db.VarChar(191)
+  /// 操作者类型
+  actorType       String?        @map("actor_type") @db.VarChar(64)
+  /// 操作者名称
+  actorName       String?        @map("actor_name") @db.VarChar(191)
+  /// 操作者角色列表
+  actorRoles      Json?          @map("actor_roles")
+  /// 请求方法
+  requestMethod   String?        @map("request_method") @db.VarChar(16)
+  /// 请求路径
+  requestPath     String?        @map("request_path")
+  /// 请求IP
+  ip              String?        @db.VarChar(191)
+  /// 用户代理
+  userAgent       String?        @map("user_agent")
+  /// HTTP状态码
+  statusCode      Int?           @map("status_code")
+  /// 业务状态码
+  bizCode         Int?           @map("biz_code")
+  /// 审计结果
+  result          AuditLogResult
+  /// 失败原因
+  failureReason   String?        @map("failure_reason")
+  /// 请求头快照
+  requestHeaders  Json?          @map("request_headers")
+  /// 请求体快照
+  requestBody     Json?          @map("request_body")
+  /// 响应头快照
+  responseHeaders Json?          @map("response_headers")
+  /// 响应体快照
+  responseBody    Json?          @map("response_body")
+  /// 操作前快照
+  beforeData      Json?          @map("before_data")
+  /// 操作后快照
+  afterData       Json?          @map("after_data")
+  /// 补充上下文
+  context         Json?
+  /// 创建时间
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  @@index([app, module, action])
+  @@index([actorId])
+  @@index([requestId])
+  @@index([result])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+/// 审计结果枚举
+enum AuditLogResult {
+  /// 成功
+  SUCCESS
+  /// 失败
+  FAILURE
+  /// 拒绝
+  DENY
+}
